@@ -5,18 +5,24 @@ Make changes only within `C:\noneRepos\mazwi\`, except explicitly authorized use
 
 ## 1. About the project
 
-Mazwi is an Andela project with a task-item example vertical slice.
+Mazwi is an African storytelling platform under construction, with a Next.js/TypeScript/Tailwind frontend and a .NET API.
 It uses C#/.NET 10 LTS, ASP.NET Core Web API, PostgreSQL, and Dapper via Npgsql; no Entity Framework.
 
 ## 2. Install, run, build and test
 
 SDK 10.0.402 is pinned in global.json. Quality tooling also uses Node.js.
 - Install: `dotnet restore Mazwi.sln --configfile NuGet.Config`
-- Run: TODO - API/database startup awaits local credentials.
+- Run (from web/): `npm.cmd run start -- --port 3000` after building; start the API as documented in docs/frontend-setup.md.
 - Build: `dotnet build`
 - Lint: `dotnet format --verify-no-changes`
 - Test: `dotnet test`
 - Architecture: `node .codex/skills/repo-quality/scripts/architecture.mjs`
+- Frontend install: `npm.cmd install --prefix web --ignore-scripts --no-audit --no-fund --cache .local/npm-cache --prefer-offline`
+- Frontend build: `npm.cmd --prefix web run build`
+- Frontend lint: `npm.cmd --prefix web run lint`
+- Frontend type-check: `npm.cmd --prefix web run typecheck`
+- Frontend tests: `npm.cmd --prefix web test`
+- Frontend browser tests: `npm.cmd --prefix web run test:e2e`
 
 Build must have zero warnings; format and all four test projects must pass before a PR is ready.
 Repository/full-stack API tests currently require MAZWI_TEST_CONNECTION_STRING for a dedicated local database ending in _tests; never mock the database in Repository.Tests.
@@ -37,6 +43,7 @@ Dependencies point inward only:
 - Standard C# and LINQ only. No MediatR, AutoMapper, or magic libraries without planning approval.
 - Prefer readable code, small methods, meaningful names; avoid premature abstraction.
 - Use async/await throughout I/O and pass CancellationToken. DbUp migration execution is synchronous; TODO: obtain approval for the explicit migration-command-only exception. Request handlers remain fully async.
+- Frontend: web/ uses strict TypeScript, App Router and Tailwind, two-space indentation and double quotes. Keep business rules, SQL and API keys out of it.
 - Parameterized SQL only; never concatenate/interpolate SQL. SQL lives only in Repository.
 - Schema changes use versioned migration scripts, never manual schema edits. PostgreSQL tables/columns use snake_case.
 - Follow .editorconfig: four-space C#, file-scoped namespaces, meaningful names; nullable, implicit usings, warnings-as-errors via Directory.Build.props.
