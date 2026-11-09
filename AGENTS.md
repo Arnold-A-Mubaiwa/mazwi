@@ -6,24 +6,29 @@ Make changes only within `C:\noneRepos\mazwi\`.
 ## 1. About the project
 
 `mazwi` is identified in README.md as an Andela project.
-Apart from this guidance, the repository contains only that README; TODO: document its purpose, features, and technology stack when established.
+The repository adds a reusable quality skill and Node.js tooling; TODO: document application features and technology stack when established.
 
 ## 2. Install, run, build and test
 
-No source code, dependency manifest, scripts, CI configuration, or test suite exists yet.
+Node.js v24.11.0 was verified. Tooling uses built-in modules with no package dependencies.
 
 - Install: TODO - no command established.
 - Run: TODO - no command established.
 - Build: TODO - no command established.
-- Test: TODO - no command established.
-- Lint: TODO - no command established.
+- Test: `node --test`
+- Lint: `node .codex/skills/repo-quality/scripts/lint.mjs .codex .agents tests`
+- Type-check: TODO - no type-checker configured.
+
+Lint covers whitespace and JavaScript syntax in the skill and tests, not semantic linting or all repository documentation.
+Tests include a README smoke test and quality-runner behavior; they do not validate an application.
 
 Do not assume a language, package manager, or framework. Verify commands when implementation is added.
 
 ## 3. Code style and conventions
 
 - README.md uses Markdown with an ATX heading (`# mazwi`) and a short project description.
-- TODO: establish code formatting, naming, imports, directory structure, and test conventions once source code exists.
+- Tooling uses Node.js ESM (`.mjs`), two-space indentation, single quotes, semicolons, and `node:` built-in imports.
+- Tests use `node:test`, `node:assert/strict`, and `*.test.mjs` under `tests/`.
 - Keep documentation concise and distinguish observed facts from TODOs.
 
 ## 4. Git rules
@@ -70,3 +75,4 @@ On Windows PowerShell without `&&` support, run each chained command separately 
 ## 5. Documentation
 
 Whenever the work involves the OpenAI API, the Apps SDK or Codex, use the openaiDeveloperDocs MCP without being asked.
+The repo-quality workflow is in `.codex/skills/repo-quality/SKILL.md`; `.agents/skills/repo-quality/SKILL.md` provides automatic discovery.
