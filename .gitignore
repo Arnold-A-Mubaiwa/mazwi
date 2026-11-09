@@ -14,3 +14,9 @@ coverage/
 **/appsettings.Development.json
 **/appsettings.*.local.json
 *.log
+web/.next/
+web/out/
+web/*.tsbuildinfo
+web/next-env.d.ts
+web/test-results/
+web/playwright-report/
