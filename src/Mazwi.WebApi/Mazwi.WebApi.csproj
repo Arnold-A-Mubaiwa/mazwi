@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <UserSecretsId>mazwi-webapi-development</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Mazwi.Application/Mazwi.Application.csproj" />
+    <ProjectReference Include="../Mazwi.Repository/Mazwi.Repository.csproj" />
+  </ItemGroup>
+</Project>

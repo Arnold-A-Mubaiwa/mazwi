@@ -7,7 +7,7 @@ const failures = [];
 let checked = 0;
 function visit(directory) {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    if (['.git', 'node_modules'].includes(entry.name) || entry.isSymbolicLink()) continue;
+    if (['.git', 'node_modules', '.local', 'bin', 'obj'].includes(entry.name) || entry.isSymbolicLink()) continue;
     const path = join(directory, entry.name);
     if (entry.isDirectory()) { visit(path); continue; }
     if (!/\.(md|mjs)$/.test(path)) continue;

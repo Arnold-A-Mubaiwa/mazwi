@@ -1,39 +1,34 @@
 ---
 name: repo-quality
-description: Check this repository's lint, type-check, and tests, group failures by likely root cause, and propose minimal fixes for approval. Use for repository quality checks, failing checks, or readiness reviews.
+description: Build, format-check, test, and inspect DDD dependencies in the Mazwi .NET solution. Use for quality checks, failing checks, or PR readiness reviews; propose minimal fixes for approval.
 ---
 
 # Repository quality
 
-Read root AGENTS.md before executing checks or changing files. Follow its issue,
-branch, commit, and PR rules for any bootstrap work. Do not switch branches or
-create issues for a check-only invocation.
+Read AGENTS.md and the referenced scripts before executing checks.
 
-1. Read the Install, run, build and test section in AGENTS.md. Use its Lint,
-   Type-check, and Test commands verbatim from the repository root. Inspect the
-   referenced scripts first; stop for approval if a documented check uses
-   automatic repair flags, would modify source, or would install dependencies.
-2. If there is no test suite, first set up the smallest framework supported by
-   the existing stack and add one smoke test of a real repository invariant.
-   For this repository's Node tooling, use the built-in node:test runner without
-   dependencies. Initial framework setup and its smoke test are authorized by
-   invocation; existing failures and application changes are not. Follow Git
-   rules before writing. Run the test and only then document its command in
-   AGENTS.md. If no runtime is available, report BLOCKED rather than guessing.
-3. Run the helper with `node .codex/skills/repo-quality/scripts/check.mjs`.
-   It reads single-line backtick commands labeled Lint, Type-check, and Test in
-   section 2 of AGENTS.md. TODO, missing, duplicate, or unsupported declarations
-   are BLOCKED. If formatting differs, read and run the commands yourself;
-   never silently invent a replacement. Run independent checks even after one
-   fails. The helper only runs commands; it does not install, bootstrap, or fix.
-4. Read output and group failures by likely root cause, not one bullet per error.
-   Cite affected files and evidence, distinguish hypotheses, and separate
-   missing tooling from defects. Propose the smallest fix for each group.
-   Do not apply proposed fixes until the user explicitly approves them. Do not
-   bootstrap again merely because an existing smoke test fails. Approval to
-   create or invoke this skill does not authorize fixing observed failures.
-5. Finish with command/status/exit-code rows for all three checks and a short
-   PASS/FAIL report. Overall PASS requires all three checks to pass; a BLOCKED
-   check makes the overall result FAIL (incomplete), never a clean pass.
-   State smoke-test coverage limits and list pending approval items. If the user
-   asks for a PR, use a draft PR and disclose any missing checks.
+1. Run `dotnet build` (zero warnings), `dotnet format --verify-no-changes`,
+   and `dotnet test` across all four C# test projects using AGENTS.md commands.
+   Run the architecture helper to check inward references, forbidden Domain
+   infrastructure dependencies, and SQL outside Repository. Also review changed
+   code for business logic placement, parameterization, and CancellationToken.
+2. If tests do not exist, establish minimal xUnit tests for the existing layers,
+   including one real smoke test. Follow AGENTS.md plan/issue/branch gates before
+   writing. Never replace real PostgreSQL tests with mocks or silent skips.
+   Local PostgreSQL is currently approved; use MAZWI_TEST_CONNECTION_STRING for
+   a dedicated database ending in _tests. Do not install or bootstrap during a
+   check-only invocation without the required approval.
+3. Run `node .codex/skills/repo-quality/scripts/check.mjs` from the root.
+   It reads Build, Lint, Test, and Architecture commands from AGENTS.md section 2,
+   loads an ignored .env file without shell evaluation, and runs each check
+   independently. Missing, duplicate, or TODO commands are BLOCKED. If formatting
+   differs, read and run commands manually rather than guessing. Inspect scripts
+   first; stop for approval if a check repairs code or installs dependencies.
+4. Group failures by likely root cause with evidence and affected files.
+   Separate environment blockers from defects. Propose minimal fixes, but
+   do not apply them until the user approves. A failing test does not authorize
+   application changes or framework replacement.
+5. Finish with command/status/exit-code rows for build, format, tests, and
+   architecture, then a short PASS/FAIL report. PASS requires all four checks
+   to pass; BLOCKED means FAIL (incomplete). State coverage limits and pending
+   approval items. Do not claim every possible case is covered.
