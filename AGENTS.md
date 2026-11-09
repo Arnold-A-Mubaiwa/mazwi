@@ -1,78 +1,85 @@
 # Repository guidance
 
-Keep this file under 100 lines. Record project commands only after running them successfully; use TODO for unknowns.
-Make changes only within `C:\noneRepos\mazwi\`.
+Keep this file under 100 lines. Record executed commands and outcomes; use TODO for unknowns.
+Make changes only within `C:\noneRepos\mazwi\`, except explicitly authorized user-level skills.
 
 ## 1. About the project
 
-`mazwi` is identified in README.md as an Andela project.
-The repository adds a reusable quality skill and Node.js tooling; TODO: document application features and technology stack when established.
+Mazwi is an Andela project with a task-item example vertical slice.
+It uses C#/.NET 10 LTS, ASP.NET Core Web API, PostgreSQL, and Dapper via Npgsql; no Entity Framework.
 
 ## 2. Install, run, build and test
 
-Node.js v24.11.0 was verified. Tooling uses built-in modules with no package dependencies.
+SDK 10.0.402 is pinned in global.json. Quality tooling also uses Node.js.
+- Install: `dotnet restore Mazwi.sln --configfile NuGet.Config`
+- Run: TODO - API/database startup awaits local credentials.
+- Build: `dotnet build`
+- Lint: `dotnet format --verify-no-changes`
+- Test: `dotnet test`
+- Architecture: `node .codex/skills/repo-quality/scripts/architecture.mjs`
 
-- Install: TODO - no command established.
-- Run: TODO - no command established.
-- Build: TODO - no command established.
-- Test: `node --test`
-- Lint: `node .codex/skills/repo-quality/scripts/lint.mjs .codex .agents tests`
-- Type-check: TODO - no type-checker configured.
+Build must have zero warnings; format and all four test projects must pass before a PR is ready.
+Repository/full-stack API tests currently require MAZWI_TEST_CONNECTION_STRING for a dedicated local database ending in _tests; never mock the database in Repository.Tests.
+Local PostgreSQL is the current user-approved default for everything. Testcontainers.PostgreSql and Docker Compose are retained for future container use; Docker is not required now.
+Secrets belong in ignored .env/appsettings.Development.json or user-secrets, never tracked files.
+The quality helper loads .env and uses repository-local .local caches. Missing credentials are failures, not skipped/passing tests.
 
-Lint covers whitespace and JavaScript syntax in the skill and tests, not semantic linting or all repository documentation.
-Tests include a README smoke test and quality-runner behavior; they do not validate an application.
+## 3. Architecture and coding standards
 
-Do not assume a language, package manager, or framework. Verify commands when implementation is added.
-
-## 3. Code style and conventions
-
-- README.md uses Markdown with an ATX heading (`# mazwi`) and a short project description.
-- Tooling uses Node.js ESM (`.mjs`), two-space indentation, single quotes, semicolons, and `node:` built-in imports.
-- Tests use `node:test`, `node:assert/strict`, and `*.test.mjs` under `tests/`.
-- Keep documentation concise and distinguish observed facts from TODOs.
+Dependencies point inward only:
+- Mazwi.Domain: entities, immutable record value objects, aggregates, domain services/exceptions, repository interfaces. No project/package references, Dapper, SQL, or ASP.NET.
+- Mazwi.Application: use cases, DTOs, orchestration; references Domain only. Database access only through Domain repository interfaces.
+- Mazwi.Repository: Dapper/Npgsql implementations, SQL, versioned DbUp migrations; references Domain only.
+- Mazwi.WebApi: thin controllers, request/response models, DI composition root; references Application and Repository only. Validate input, call one app service, return its result; no business rules or SQL.
+- Business rules live in rich Domain entities/value objects, not app services or controllers. No anemic models.
+- Encapsulate state with private setters or getters; mutate only through invariant-enforcing methods. Constructors/factories reject invalid state. Entities have identity; value objects are immutable records.
+- Program to interfaces, inject dependencies through constructors, follow SOLID; one class has one responsibility.
+- Standard C# and LINQ only. No MediatR, AutoMapper, or magic libraries without planning approval.
+- Prefer readable code, small methods, meaningful names; avoid premature abstraction.
+- Use async/await throughout I/O and pass CancellationToken. DbUp migration execution is synchronous; TODO: obtain approval for the explicit migration-command-only exception. Request handlers remain fully async.
+- Parameterized SQL only; never concatenate/interpolate SQL. SQL lives only in Repository.
+- Schema changes use versioned migration scripts, never manual schema edits. PostgreSQL tables/columns use snake_case.
+- Follow .editorconfig: four-space C#, file-scoped namespaces, meaningful names; nullable, implicit usings, warnings-as-errors via Directory.Build.props.
+- Every change ships with tests covering happy paths, boundary/edge cases, invalid input, and failures.
+- Mazwi.Domain.Tests: xUnit tests for every entity, value object, and invariant.
+- Mazwi.Application.Tests: each app service method; mock repositories with NSubstitute.
+- Mazwi.Repository.Tests: integration tests against real PostgreSQL; no database mocks. Local PostgreSQL is the current approved exception to Testcontainers execution.
+- Mazwi.WebApi.Tests: WebApplicationFactory endpoint tests for success, validation, not-found, and errors; include a real database round-trip test.
+- Test names: Method_Scenario_ExpectedResult. Arrange / Act / Assert.
 
 ## 4. Git rules
 
-The repository uses `main`; the owner authorized using it instead of `master`.
-The commands below are required workflow templates, not claims of executed project validation.
-On Windows PowerShell without `&&` support, run each chained command separately and stop on failure.
+Use main in this repository; the owner approved it instead of master.
+Git commands below are required workflow templates, not claims of project validation.
+On Windows PowerShell without &&, run commands separately and stop on failure.
 
-### Issue first
-
-- Before writing any code, and before creating a branch, there must be a GitHub issue.
-- Check for an existing one first: `gh issue list --search "<keywords>"`. Use it if it exists.
-- If none exists, create one: `gh issue create --title "<short summary>" --body "<the problem, the proposed change, the acceptance criteria>"`.
-- No issue number, no code. If `gh` is not available, or the repo is not on GitHub, stop and ask the user. Do not skip this step.
+### Plan and issue
+- PLAN TOGETHER: investigate read-only, then discuss the problem, root cause if known, change, files per layer, migrations, acceptance criteria, tests per layer, and risks. No issue, branch, or code yet.
+- WAIT FOR MY DECISION: only explicit approval such as go / approved / take it on counts. If no, stop and create nothing.
+- CREATE THE ISSUE after approval: check duplicates with `gh issue list --search "<keywords>"`; reuse a matching issue, otherwise `gh issue create --title "<summary>" --body "<agreed plan>"`.
+- FINISH WITHOUT ASKING: branch, implement, tests, lint, push, draft PR. Stop only if the plan is wrong, scope grows meaningfully, or something is blocked.
+- No approved plan = no issue. No issue number = no code. If gh is unavailable or this is not GitHub, stop and ask.
 
 ### Branching
-
-- Always branch from an up-to-date main: `git switch main && git pull && git switch -c <branch>`.
-- Never branch from whatever is checked out, and never from `uat`.
-- Name the branch `<type>/<issue-number>-<short-slug>`, for example `fix/42-login-timeout` or `feat/57-dark-mode`.
-- One branch holds one piece of work.
+- Always branch from updated main: `git switch main && git pull && git switch -c <branch>`.
+- Never branch from whatever is checked out or from uat. One branch holds one piece of work.
+- Branch names: `<type>/<issue-number>-<short-slug>`.
 
 ### Upstream tracking
-
 - A working branch must never track main.
-- On the first push, set the upstream: `git push -u origin <branch>`.
-- Check it: `git rev-parse --abbrev-ref <branch>@{upstream}` must print `origin/<branch>`, never `origin/main`.
-- If it tracks main, fix it: `git branch --unset-upstream <branch>`, then push again with `-u`.
-- When creating a worktree, always pass `--no-track`, or the branch silently tracks origin/main: `git worktree add --no-track <path> -b <branch> origin/main`.
+- First push: `git push -u origin <branch>`.
+- Verify: `git rev-parse --abbrev-ref '<branch>@{upstream}'` must print origin/<branch>, never origin/main.
+- Wrong upstream: `git branch --unset-upstream <branch>`, push again with -u, then verify.
+- Worktrees always use --no-track: `git worktree add --no-track <path> -b <branch> origin/main`.
 
-### Commits and pull requests
-
-- Never commit or push directly to main, and never merge into main locally.
-- Every commit message references the issue, for example `Refs #42`.
-- Before opening a PR, run the tests and the linter on the files you changed.
-- To release, push the branch and open a PR targeting main. The PR body must include `Closes #<issue-number>`.
-
-### UAT (only if the repo has a `uat` branch)
-
-- To test, merge the working branch into `uat`.
-- Make fixes on the working branch, then merge it into `uat` again.
-- Never merge `uat` into main.
+### Commits, PRs and UAT
+- Never commit/push directly to main or merge into main locally. Every commit includes Refs #<issue-number>.
+- Before a PR: dotnet build and dotnet test must pass with zero warnings; run dotnet format --verify-no-changes and architecture checks. The initial scaffold draft documents deferred database validation; never mark it ready until that passes.
+- Open a draft PR targeting main with Summary / Tests / Ticket and Closes #<issue-number>.
+- After all checks pass, the standing user preference permits marking ready and enabling auto-merge; respect GitHub checks/reviews. Never bypass protections.
+- If uat exists, merge the working branch into uat to test; fix on the working branch and merge it into uat again. Never merge uat into main.
 
 ## 5. Documentation
 
-Whenever the work involves the OpenAI API, the Apps SDK or Codex, use the openaiDeveloperDocs MCP without being asked.
-The repo-quality workflow is in `.codex/skills/repo-quality/SKILL.md`; `.agents/skills/repo-quality/SKILL.md` provides automatic discovery.
+For OpenAI API, Apps SDK, or Codex work, use openaiDeveloperDocs MCP without being asked.
+The canonical repo-quality skill is .codex/skills/repo-quality/SKILL.md; .agents/skills/repo-quality/SKILL.md provides discovery.

@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import { readChecks, runChecks } from '../.codex/skills/repo-quality/scripts/check.mjs';
 
 test('commands come only from the quality section; TODO and duplicates block execution', () => {
-  const checks = readChecks('## 2. Install, run, build and test\n- Lint: `node lint.mjs`\n- Type-check: TODO\n- Test: `node --test`\n- Test: `other`\n## 3. Style\n- Type-check: `wrong`\n');
+  const checks = readChecks('## 2. Install, run, build and test\n- Build: `dotnet build`\n- Lint: `node lint.mjs`\n- Test: `node --test`\n- Test: `other`\n- Architecture: TODO\n## 3. Style\n- Architecture: `wrong`\n');
   assert.deepEqual(checks, [
+    { name: 'Build', command: 'dotnet build' },
     { name: 'Lint', command: 'node lint.mjs' },
-    { name: 'Type-check', command: null },
     { name: 'Test', command: null },
+    { name: 'Architecture', command: null },
   ]);
 });
 
