@@ -18,7 +18,7 @@ test("AiTranscript_FeatureFlagAndFakedApi_ConfirmsReplaceAndRevokesApproval", as
   });
   await page.goto(`/story/${id}/review`);
   const button = page.getByRole("button", { name: "AI first draft", exact: true });
-  if (process.env.NEXT_PUBLIC_MAZWI_AI_TRANSCRIPT !== "true") {
+  if (process.env.NEXT_PUBLIC_MAZWI_AI_TRANSCRIPT === "false") {
     await expect(page.getByLabel("Original transcript", { exact: true })).toHaveValue("Human words");
     await expect(button).toHaveCount(0);
     expect(transcriptCalls).toBe(0);

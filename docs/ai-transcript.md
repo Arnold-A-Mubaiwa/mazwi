@@ -4,7 +4,7 @@ The story editor can transcribe the stored original recording and save the resul
 
 ## Enable locally
 
-`FEATURES.aiTranscript` reads the public build-time boolean `NEXT_PUBLIC_MAZWI_AI_TRANSCRIPT`. It is off unless the value is exactly `true`. Set it in the build environment or ignored web/.env.local, then rebuild the frontend. Typing the transcript by hand works with the flag off and without an API key.
+`FEATURES.aiTranscript` reads the public build-time boolean `NEXT_PUBLIC_MAZWI_AI_TRANSCRIPT`. Since Level 1 it is on unless the value is exactly `false` (see docs/level-1.md). To turn it off, set NEXT_PUBLIC_MAZWI_AI_TRANSCRIPT=false in the build environment or ignored web/.env.local, then rebuild the frontend. Typing the transcript by hand works with the flag off and without an API key.
 
 The API reads `OPENAI_API_KEY` and `MAZWI_TRANSCRIPTION_MODEL` from server configuration. The model defaults to the language tool's `gpt-transcribe`. Keep the key in ignored root .env or the server environment, never in a NEXT_PUBLIC variable. There are no new packages and no migration.
 
