@@ -20,6 +20,10 @@ builder.Services.AddSingleton(_ =>
 });
 builder.Services.AddScoped<ITaskItemRepository, TaskItemRepository>();
 builder.Services.AddScoped<ITaskItemService, TaskItemService>();
+builder.Services.AddScoped<IStoryRepository, StoryRepository>();
+builder.Services.AddScoped<IStoryService, StoryService>();
+builder.Services.AddSingleton<IStoryMediaStore>(_ => new LocalStoryMediaStore(
+    builder.Configuration["MediaStorage:Root"] ?? Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "../../.local/media"))));
 
 WebApplication app = builder.Build();
 app.UseExceptionHandler();

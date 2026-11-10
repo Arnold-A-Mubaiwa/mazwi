@@ -1,0 +1,2 @@
+# Keep C# checkouts consistent with .editorconfig on Windows.
+*.cs text eol=lf

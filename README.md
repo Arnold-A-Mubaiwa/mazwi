@@ -1,6 +1,8 @@
 # mazwi
 
-Andela project: .NET 10 LTS task-item API with inward DDD dependencies.
+Mazwi: Every African story, in your language. A Next.js frontend and .NET 10 LTS API with inward DDD dependencies and PostgreSQL.
+
+Local story upload is available at `/upload`: save a consented recording privately and keep its metadata unpublished. See [story upload](docs/story-upload.md). AI processing and the approved-story feed are still pending. The task-item API below remains the original architecture example.
 
 ## Structure
 
