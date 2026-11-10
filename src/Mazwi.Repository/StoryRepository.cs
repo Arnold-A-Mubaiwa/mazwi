@@ -49,7 +49,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
         }
 
         IEnumerable<TranslationRow> drafts = await connection.QueryAsync<TranslationRow>(new CommandDefinition("""
-            SELECT d.language, d.text, d.notes, d.media_id AS MediaId, d.media_extension AS MediaExtension, d.media_bytes AS MediaBytes,
+            SELECT d.language, d.text, d.notes, d.media_id AS MediaId, d.media_extension AS MediaExtension, d.media_bytes AS MediaBytes, d.media_voice AS MediaVoice,
                 EXISTS (SELECT 1 FROM story_approvals a WHERE a.story_id = d.story_id AND a.language = d.language) AS IsApproved
             FROM story_translation_drafts d WHERE d.story_id = @Id ORDER BY d.language
             """, new { Id = id }, transaction, cancellationToken: cancellationToken));
@@ -57,7 +57,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
         return Story.Rehydrate(row.Id, new StoryDetails(row.Title, row.ArtistName, row.Community, row.Country, row.Type, row.Language),
             new StoryRecording(string.Concat("recording", row.Extension), row.Bytes), row.PermissionRecordedAt, row.Transcript,
             drafts.Select(d => new TranslationDraft(d.Language, d.Text,
-                d.MediaId is Guid mediaId ? new TranslatedRecording(mediaId, new StoryRecording(string.Concat("recording", d.MediaExtension), d.MediaBytes!.Value)) : null,
+                d.MediaId is Guid mediaId ? new TranslatedRecording(mediaId, new StoryRecording(string.Concat("recording", d.MediaExtension), d.MediaBytes!.Value), d.MediaVoice) : null,
                 d.IsApproved, new TranslationNotes(d.Notes))), row.ReviewVersion, row.OriginalApproved);
     }
 
@@ -136,9 +136,9 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
         }
 
         int rows = await connection.ExecuteAsync(new CommandDefinition("""
-            UPDATE story_translation_drafts SET media_id = @MediaId, media_extension = @Extension, media_bytes = @Bytes
+            UPDATE story_translation_drafts SET media_id = @MediaId, media_extension = @Extension, media_bytes = @Bytes, media_voice = @Voice
             WHERE story_id = @Id AND language = @Language
-            """, new { Id = storyId, draft.Language, MediaId = recording.Id, recording.File.Extension, recording.File.Bytes }, transaction, cancellationToken: cancellationToken));
+            """, new { Id = storyId, draft.Language, MediaId = recording.Id, recording.File.Extension, recording.File.Bytes, recording.Voice }, transaction, cancellationToken: cancellationToken));
         if (rows != 1)
         {
             throw new DomainException("Save the translation before adding its recording.");
@@ -219,6 +219,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
         public Guid? MediaId { get; set; }
         public string? MediaExtension { get; set; }
         public long? MediaBytes { get; set; }
+        public string? MediaVoice { get; set; }
         public bool IsApproved { get; set; }
     }
 

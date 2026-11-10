@@ -3,11 +3,12 @@ import { LANGUAGES, type LanguageCode } from "./languages.ts";
 export type ViewerStory = {
   id: string; title: string; artistName: string; community: string; country: string; type: string;
   originalLanguage: LanguageCode; textLanguage: LanguageCode; audioLanguage: LanguageCode;
-  text: string; recordingExtension: string; originalRecordingExtension?: string; reviewVersion: string; availableLanguages: LanguageCode[]; mediaUrl: string;
+  text: string; recordingExtension: string; originalRecordingExtension?: string; reviewVersion: string; availableLanguages: LanguageCode[]; mediaUrl: string; audioVoice?: "standard" | "clone" | null;
 };
 export type FeedPage = { items: ViewerStory[]; nextOffset: number | null };
 export function languageName(code: string): string { return LANGUAGES.find(item => item.code === code)?.name ?? code; }
 export function playbackLabel(story: ViewerStory): string {
+  if (story.audioVoice && story.audioLanguage !== story.originalLanguage) return `AI voice, approved by ${story.artistName}`;
   return story.audioLanguage === story.originalLanguage ? `Original ${languageName(story.audioLanguage)} audio` : `Artist-provided ${languageName(story.audioLanguage)} recording`;
 }
 export function viewingNote(story: ViewerStory, preferred: LanguageCode): string {

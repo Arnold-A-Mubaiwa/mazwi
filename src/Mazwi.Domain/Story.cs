@@ -90,12 +90,46 @@ public sealed class Story
         }
 
         ArgumentNullException.ThrowIfNull(recording);
+        if (recording.Voice is not null)
+        {
+            throw new DomainException("Uploaded recordings cannot be marked as AI voices.");
+        }
+
         if (!_translations.TryGetValue(language, out TranslationDraft? draft))
         {
             throw new DomainException("Save the translation text before adding its recording.");
         }
 
-        _translations[language] = new TranslationDraft(language, draft.Text.Value, recording, notes: draft.Notes);
+        ReplaceRecording(draft, recording);
+    }
+
+    public SpeechScript GetSpeechScript(string language, Guid expectedVersion)
+    {
+        EnsureVersion(expectedVersion);
+        if (!_translations.TryGetValue(language, out TranslationDraft? draft))
+        {
+            throw new AiDraftNotAllowedException("Save translation text before generating a voice.");
+        }
+
+        return new SpeechScript(draft.Text.Value);
+    }
+
+    public void AttachGeneratedVoice(string language, TranslatedRecording recording, Guid expectedVersion)
+    {
+        ArgumentNullException.ThrowIfNull(recording);
+        GetSpeechScript(language, expectedVersion);
+        if (recording.Voice is null)
+        {
+            throw new DomainException("A generated voice must record its AI voice kind.");
+        }
+
+        ReplaceRecording(_translations[language], recording);
+    }
+
+    // Any new recording, uploaded or generated, needs the artist to approve the language again.
+    private void ReplaceRecording(TranslationDraft draft, TranslatedRecording recording)
+    {
+        _translations[draft.Language] = new TranslationDraft(draft.Language, draft.Text.Value, recording, notes: draft.Notes);
         ReviewVersion = Guid.NewGuid();
     }
 
@@ -182,7 +216,7 @@ public sealed class Story
 
         if (!originalAudio && translation.Recording is TranslatedRecording media)
         {
-            return new(translation.Language, translation.Language, translation.Text, media.Id, media.File);
+            return new(translation.Language, translation.Language, translation.Text, media.Id, media.File, media.Voice);
         }
 
         return new(translation.Language, Details.Language, translation.Text, Id, Recording);

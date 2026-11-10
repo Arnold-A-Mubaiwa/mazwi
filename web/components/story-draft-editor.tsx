@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { LANGUAGES, type LanguageCode } from "@/lib/languages";
-import { getStoryDraft, saveStoryText, approveStory, uploadTranslationRecording, draftTranslation, MAX_STORY_TEXT, type StoryDraft } from "@/lib/story-drafts";
+import { getStoryDraft, saveStoryText, approveStory, uploadTranslationRecording, draftTranslation, generateVoice, MAX_STORY_TEXT, MAX_VOICE_TEXT, type StoryDraft } from "@/lib/story-drafts";
 import { FEATURES } from "@/lib/config";
 import { recordingError } from "@/lib/stories";
 import { RecordingPlayer } from "./recording-player";
@@ -13,7 +13,7 @@ export function StoryDraftEditor({ id }: { id: string }) {
   const [transcript, setTranscript] = useState("");
   const [translations, setTranslations] = useState<Partial<Record<LanguageCode, string>>>({});
   const [notes, setNotes] = useState<Partial<Record<LanguageCode, string[]>>>({});
-  const [aiPending, setAiPending] = useState(false);
+  const [aiPending, setAiPending] = useState<"translation" | "voice" | null>(null);
   const [target, setTarget] = useState<LanguageCode>("xh");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -71,7 +71,7 @@ export function StoryDraftEditor({ id }: { id: string }) {
   async function generateDraft() {
     if (!draft || busy || unsaved || !draft.originalApproved) return;
     const language = target;
-    setBusy(true); setAiPending(true); setSaveError(null); setMessage("");
+    setBusy(true); setAiPending("translation"); setSaveError(null); setMessage("");
     saving.current = new AbortController();
     try {
       const updated = await draftTranslation(id, language, draft.reviewVersion, saving.current.signal);
@@ -82,7 +82,20 @@ export function StoryDraftEditor({ id }: { id: string }) {
       setMessage("AI draft saved. Check and correct the language, names and meaning before approving. Nothing was approved automatically.");
     } catch (failure) {
       if (!saving.current.signal.aborted) setSaveError(failure instanceof Error ? failure.message : "AI translation failed. Your text is still here.");
-    } finally { setBusy(false); setAiPending(false); }
+    } finally { setBusy(false); setAiPending(null); }
+  }
+
+  async function generateTranslatedVoice() {
+    if (!draft || busy || unsaved) return;
+    const language = target;
+    setBusy(true); setAiPending("voice"); setSaveError(null); setMessage("");
+    saving.current = new AbortController();
+    try {
+      setDraft(await generateVoice(id, language, draft.reviewVersion, saving.current.signal));
+      setMessage("AI voice saved as this language's recording. Listen to all of it and check pronunciation before approving. Nothing was approved automatically.");
+    } catch (failure) {
+      if (!saving.current.signal.aborted) setSaveError(failure instanceof Error ? failure.message : "AI voice failed. Your saved draft has not changed.");
+    } finally { setBusy(false); setAiPending(null); }
   }
 
   async function approve(language: LanguageCode) {
@@ -170,7 +183,11 @@ export function StoryDraftEditor({ id }: { id: string }) {
         </form>
         {targetSaved && <div className="translated-recording">
           <p className="draft-notice">{targetSaved.status === "approved" ? "This language is approved." : "This language is a draft."} Without a translated recording, viewers will hear clearly labelled original audio with approved translated text.</p>
-          {targetSaved.recordingId && <RecordingPlayer key={targetSaved.recordingId} extension={targetSaved.recordingExtension ?? ".mp4"} label="Artist-provided translated recording" src={`/api/stories/${id}/recordings/${target}?v=${draft.reviewVersion}`} />}
+          {targetSaved.recordingId && <RecordingPlayer key={targetSaved.recordingId} extension={targetSaved.recordingExtension ?? ".mp4"} label={targetSaved.recordingVoice ? "AI voice translated recording" : "Artist-provided translated recording"} src={`/api/stories/${id}/recordings/${target}?v=${draft.reviewVersion}`} />}
+          {FEATURES.aiVoice && <>
+            <button className="retry-button secondary-button" type="button" disabled={busy || unsaved || targetSaved.text.trim().length === 0 || targetSaved.text.length > MAX_VOICE_TEXT} onClick={() => void generateTranslatedVoice()}>Generate voice</button>
+            <p className="draft-notice">Creates a standard AI voice (not your voice) from the saved translation, up to 1,800 characters (about two minutes). It replaces this language’s recording, needs approval again and incurs an API charge.</p>
+          </>}
           <form onSubmit={uploadRecording}><fieldset disabled={busy || unsaved}>
             <legend>Optional translated recording</legend>
             <label htmlFor="translated-recording">Translated recording</label><input id="translated-recording" type="file" name="recording" accept=".mp3,.wav,.m4a,.mp4,.webm" required />
@@ -181,9 +198,9 @@ export function StoryDraftEditor({ id }: { id: string }) {
         </div>}
       </section>
     </div>
-    {busy && <p className="draft-feedback" role="status">{aiPending ? "Creating an AI translation draft…" : "Saving your words…"}</p>}
+    {busy && <p className="draft-feedback" role="status">{aiPending === "voice" ? "Generating an AI voice…" : aiPending ? "Creating an AI translation draft…" : "Saving your words…"}</p>}
     {message && <p className="draft-feedback" role="status">{message}</p>}
     {saveError && <p className="upload-error" role="alert">{saveError}</p>}
-    <p className="draft-privacy-note">Nothing is approved automatically. Save and review every change before approval. AI drafting sends your saved transcript to OpenAI only when you request it. No voice is generated here. This local demo has no accounts; keep it on your own computer.</p>
+    <p className="draft-privacy-note">Nothing is approved automatically. Save and review every change before approval. AI drafting sends your saved transcript, and AI voice sends your saved translation, to OpenAI only when you request it. This local demo has no accounts; keep it on your own computer.</p>
   </>;
 }

@@ -1,7 +1,8 @@
 import { LANGUAGES, type LanguageCode } from "./languages.ts";
 
 export const MAX_STORY_TEXT = 20_000;
-export type TranslationDraft = { language: LanguageCode; text: string; status: "draft" | "approved"; recordingId?: string | null; recordingExtension?: string | null; notes?: string[] | null };
+export const MAX_VOICE_TEXT = 1_800;
+export type TranslationDraft = { language: LanguageCode; text: string; status: "draft" | "approved"; recordingId?: string | null; recordingExtension?: string | null; notes?: string[] | null; recordingVoice?: "standard" | "clone" | null };
 export type StoryDraft = {
   id: string; title: string; artistName: string; language: LanguageCode; status: "unpublished" | "published";
   reviewVersion: string; originalApproved: boolean; recordingExtension: string;
@@ -23,6 +24,7 @@ function isTranslation(value: unknown): value is TranslationDraft {
   if (!value || typeof value !== "object") return false;
   const draft = value as Record<string, unknown>;
   return isLanguage(draft.language) && typeof draft.text === "string" && ["draft", "approved"].includes(String(draft.status))
+    && (draft.recordingVoice == null || draft.recordingVoice === "standard" || draft.recordingVoice === "clone")
     && (draft.notes == null || (Array.isArray(draft.notes) && draft.notes.length <= 20 && draft.notes.every(note => typeof note === "string" && note.trim().length > 0 && note.length <= 1000)));
 }
 
@@ -78,4 +80,13 @@ export async function draftTranslation(id: string, language: LanguageCode, revie
   return readDraft(await fetch(`/api/stories/${encodeURIComponent(id)}/drafts/translations/${language}/ai-draft`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reviewVersion }), signal,
   }), id);
+}
+
+export async function generateVoice(id: string, language: LanguageCode, reviewVersion: string, signal?: AbortSignal): Promise<StoryDraft> {
+  const response = await fetch(`/api/stories/${encodeURIComponent(id)}/drafts/translations/${language}/ai-voice`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reviewVersion }), signal,
+  });
+  if (response.status === 422) throw new Error("Save the translation text first. AI voices support up to 1,800 characters (about two minutes); upload your own recording for longer text.");
+  if (response.status === 502 || response.status === 504) throw new Error("AI voice is unavailable. Your saved draft has not changed. Please try again later.");
+  return readDraft(response, id);
 }
