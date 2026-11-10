@@ -141,6 +141,25 @@ h3 { font-size: 35px; line-height: 1.14; letter-spacing: -1px; margin: 0 0 15px;
 .recording-player > p { font-size: 13px; color: var(--green); line-height: 1.6; }
 .recording-player audio, .recording-player video { display: block; width: 100%; max-height: 420px; background: #10120d; border-radius: 4px; }
 .secondary-button { background: transparent; color: var(--ochre); border: 1px solid var(--ochre); }
+.viewer-feed { min-width: 0; }
+.viewer-card { border: 1px solid #48513b; border-radius: 5px; background: #1c2018; padding: 28px; min-height: 65vh; touch-action: pan-y; }
+.viewer-heading, .viewer-navigation { display: flex; gap: 15px; align-items: center; justify-content: space-between; }
+.viewer-heading { color: var(--green); font-size: 12px; margin-bottom: 18px; }
+.viewer-heading .eyebrow { margin: 0; }
+.viewer-card h3 { overflow-wrap: anywhere; }
+.viewer-credit { font-size: 14px; color: var(--green); line-height: 1.8; }
+.viewer-note { color: var(--ochre); font-size: 13px; line-height: 1.8; }
+.viewer-text { margin-top: 25px; border-top: 1px solid var(--line); padding-top: 20px; }
+.viewer-text .eyebrow { color: var(--green); font-size: 9px; }
+.viewer-text > p:last-child { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 17px; line-height: 1.9; }
+.viewer-languages { font-size: 12px; line-height: 1.8; color: var(--muted); }
+.viewer-navigation { margin-top: 16px; font-size: 12px; color: var(--muted); }
+.viewer-navigation button, .text-control { font: inherit; min-height: 44px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--paper); cursor: pointer; padding: 10px 14px; }
+.viewer-navigation button:disabled { opacity: .45; cursor: default; }
+.text-control { color: var(--ochre); margin: 15px 0 0; font-size: 13px; }
+.story-page { padding: 45px 0; max-width: 800px; margin: auto; }
+.story-language { margin: 30px 0; max-width: 400px; }
+@media (max-width: 650px) { .viewer-card { padding: 20px; } .viewer-heading { align-items: flex-start; } .viewer-navigation { flex-wrap: wrap; } .viewer-navigation button { font-size: 12px; } }
 .translated-recording { border-top: 1px solid var(--line); margin-top: 28px; padding-top: 15px; }
 .translated-recording input[type=file] { max-width: 100%; font: inherit; font-size: 13px; }
 .translated-recording .permission-field { display: flex; gap: 10px; line-height: 1.7; align-items: flex-start; }
