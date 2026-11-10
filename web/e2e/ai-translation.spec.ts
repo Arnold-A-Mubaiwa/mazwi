@@ -22,7 +22,7 @@ test("AiDraft_FeatureFlagAndFakedApi_ProtectReviewFlow", async ({ page }) => {
   });
   await page.goto(`/story/${id}/review`);
   const button = page.getByRole("button", { name: "AI draft", exact: true });
-  if (process.env.NEXT_PUBLIC_MAZWI_AI_TRANSLATION !== "true") {
+  if (process.env.NEXT_PUBLIC_MAZWI_AI_TRANSLATION === "false") {
     await expect(page.getByLabel("Translation text", { exact: true })).toBeVisible();
     await expect(button).toHaveCount(0);
     expect(aiCalls).toBe(0);

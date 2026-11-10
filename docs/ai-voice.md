@@ -4,7 +4,7 @@ The story editor can turn a saved translation into a standard AI voice (not the 
 
 ## Enable locally
 
-`FEATURES.aiVoice` reads the public build-time boolean `NEXT_PUBLIC_MAZWI_AI_VOICE`. It is off unless the value is exactly `true`. Set it in the build environment or ignored web/.env.local, then rebuild the frontend. Uploading a recording by hand works with the flag off and without an API key.
+`FEATURES.aiVoice` reads the public build-time boolean `NEXT_PUBLIC_MAZWI_AI_VOICE`. Since Level 1 it is on unless the value is exactly `false` (see docs/level-1.md). To turn it off, set NEXT_PUBLIC_MAZWI_AI_VOICE=false in the build environment or ignored web/.env.local, then rebuild the frontend. Uploading a recording by hand works with the flag off and without an API key.
 
 The API reads `OPENAI_API_KEY` and `MAZWI_SPEECH_MODEL` from server configuration. The model defaults to the language tool's `gpt-realtime-2.1-mini`. Keep the key in ignored root .env or the server environment, never in a NEXT_PUBLIC variable. There are no new packages.
 

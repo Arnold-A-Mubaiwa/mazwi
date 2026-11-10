@@ -18,7 +18,7 @@ test("AiVoice_FeatureFlagAndFakedApi_RevokesApprovalAndLabelsFeed", async ({ pag
   await page.goto(`/story/${id}/review`);
   await page.getByLabel("Translation language", { exact: true }).selectOption("xh");
   const button = page.getByRole("button", { name: "Generate voice", exact: true });
-  if (process.env.NEXT_PUBLIC_MAZWI_AI_VOICE !== "true") {
+  if (process.env.NEXT_PUBLIC_MAZWI_AI_VOICE === "false") {
     await expect(page.getByLabel("Translated recording", { exact: true })).toBeVisible();
     await expect(button).toHaveCount(0);
     expect(voiceCalls).toBe(0);
