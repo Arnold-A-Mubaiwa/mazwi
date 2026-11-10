@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { storyTextError, getStoryDraft, saveStoryText } from "../lib/story-drafts.ts";
+import { storyTextError, getStoryDraft, saveStoryText, approveStory, uploadTranslationRecording } from "../lib/story-drafts.ts";
 
 const id = "11111111-1111-1111-1111-111111111111";
-const draft = { id, title: "Story", artistName: "Artist", language: "sn", status: "unpublished", transcript: null, translations: [] };
+const draft = { id, title: "Story", artistName: "Artist", language: "sn", status: "unpublished", transcript: null, translations: [], reviewVersion: id, originalApproved: false, recordingExtension: ".wav" };
 
 test("StoryTextError_EmptyOverlongAndControlCharacters_RejectsInput", () => {
   for (const text of ["", " \n\t ", "a".repeat(20001), "text\0text", "text\u0085text"]) assert.notEqual(storyTextError(text), null);
@@ -54,8 +54,24 @@ test("GetStoryDraft_NotFoundAndServerErrors_AreActionableAndSafe", async (t) => 
 test("GetStoryDraft_WrongStoryOrApprovedResponse_DoesNotClaimSavedDrafts", async (t) => {
   const request = t.mock.method(globalThis, "fetch", async () => Response.json({ ...draft, id: "wrong" }));
   await assert.rejects(getStoryDraft(id), /unexpected story/);
-  request.mock.mockImplementation(async () => Response.json({ ...draft, status: "published" }));
+  request.mock.mockImplementation(async () => Response.json({ ...draft, status: "archived" }));
   await assert.rejects(getStoryDraft(id), /unexpected story/);
-  request.mock.mockImplementation(async () => Response.json({ ...draft, translations: [{ language: "xh", text: "Words", status: "approved" }] }));
+  request.mock.mockImplementation(async () => Response.json({ ...draft, translations: [{ language: "xh", text: "Words", status: "queued" }] }));
   await assert.rejects(getStoryDraft(id), /unexpected story/);
+});
+test("ApproveStory_CurrentReviewVersion_SendsExplicitApproval", async (t) => {
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    assert.equal(url, `/api/stories/${id}/approvals/sn`);
+    assert.equal(options.method, "POST"); assert.equal(JSON.parse(options.body).reviewVersion, id);
+    return Response.json({ ...draft, originalApproved: true, status: "published" });
+  });
+  assert.equal((await approveStory(id, "sn", id)).originalApproved, true);
+});
+test("UploadTranslationRecording_StaleVersion_RequiresReviewWithoutClaimingSuccess", async (t) => {
+  const form = new FormData();
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    assert.equal(url, `/api/stories/${id}/recordings/xh`); assert.equal(options.body, form);
+    return new Response("", { status: 409 });
+  });
+  await assert.rejects(uploadTranslationRecording(id, "xh", form), /Reload the page/);
 });

@@ -4,4 +4,5 @@ public interface IStoryMediaStore
 {
     Task SaveAsync(Guid id, StoryRecording recording, Stream content, CancellationToken cancellationToken);
     Task DeleteAsync(Guid id, StoryRecording recording, CancellationToken cancellationToken);
+    Task<Stream?> OpenReadAsync(Guid id, StoryRecording recording, CancellationToken cancellationToken);
 }

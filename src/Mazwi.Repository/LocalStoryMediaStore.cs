@@ -67,6 +67,19 @@ public sealed class LocalStoryMediaStore(string root) : IStoryMediaStore
         return Path.Combine(root, $"{id:N}{recording.Extension}");
     }
 
+    public Task<Stream?> OpenReadAsync(Guid id, StoryRecording recording, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        try
+        {
+            Stream stream = new FileStream(FilePath(id, recording), FileMode.Open, FileAccess.Read,
+                FileShare.Read | FileShare.Delete, 81920, FileOptions.Asynchronous);
+            return Task.FromResult<Stream?>(stream);
+        }
+        catch (FileNotFoundException) { return Task.FromResult<Stream?>(null); }
+        catch (DirectoryNotFoundException) { return Task.FromResult<Stream?>(null); }
+    }
+
     private static bool MatchesHeader(string extension, ReadOnlySpan<byte> bytes)
     {
         if (bytes.Length < 12)
