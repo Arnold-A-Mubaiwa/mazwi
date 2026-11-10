@@ -43,7 +43,7 @@ public sealed class StoryFeedService(IStoryRepository repository, IStoryMediaSto
         return new(story.Id, story.Details.Title, story.Details.ArtistName, story.Details.Community, story.Details.Country,
             story.Details.Type, story.Details.Language, version.TextLanguage, version.AudioLanguage, version.Text.Value,
             version.Recording.Extension, story.ReviewVersion,
-            new[] { story.Details.Language }.Concat(story.Translations.Where(d => d.IsApproved).Select(d => d.Language)).ToArray(), story.Recording.Extension);
+            new[] { story.Details.Language }.Concat(story.Translations.Where(d => d.IsApproved).Select(d => d.Language)).ToArray(), story.Recording.Extension, version.Voice);
     }
 
     public async Task<RecordingPlaybackDto?> GetRecordingAsync(Guid id, string language, Guid reviewVersion, bool originalAudio, CancellationToken cancellationToken)

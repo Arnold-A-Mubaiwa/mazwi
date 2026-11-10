@@ -1,3 +1,3 @@
 namespace Mazwi.Domain;
 
-public sealed record ApprovedStoryVersion(string TextLanguage, string AudioLanguage, StoryText Text, Guid MediaId, StoryRecording Recording);
+public sealed record ApprovedStoryVersion(string TextLanguage, string AudioLanguage, StoryText Text, Guid MediaId, StoryRecording Recording, string? Voice = null);

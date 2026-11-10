@@ -10,6 +10,6 @@ public sealed record StoryDraftDto(Guid Id, string Title, string ArtistName, str
         story.Details.Language, story.Status, story.Transcript?.Value,
         story.Translations.OrderBy(draft => draft.Language)
             .Select(draft => new TranslationDraftDto(draft.Language, draft.Text.Value, draft.Status, draft.Recording?.Id, draft.Recording?.File.Extension,
-                draft.Notes.Items.Count == 0 ? null : draft.Notes.Items)).ToArray(),
+                draft.Notes.Items.Count == 0 ? null : draft.Notes.Items, draft.Recording?.Voice)).ToArray(),
         story.ReviewVersion, story.OriginalApproved, story.Recording.Extension);
 }
