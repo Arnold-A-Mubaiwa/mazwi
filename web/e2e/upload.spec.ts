@@ -31,6 +31,7 @@ test("Upload_RealApiAndPostgres_SavesUnpublishedStoryAndPrivateRecording", async
   const response = await result;
   expect(response.status()).toBe(201);
   const story = await response.json();
+  await expect(page.getByRole("link", { name: "Write transcript and translations" })).toHaveAttribute("href", `/story/${story.id}/review`);
   await expect(page.getByRole("heading", { name: "Your story has a home." })).toBeVisible();
   await expect(page.getByRole("status")).toContainText("No AI processing has run");
   const metadata = await request.get(`/api/stories/${story.id}`);

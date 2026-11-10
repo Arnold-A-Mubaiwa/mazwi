@@ -11,9 +11,9 @@ This is an unauthenticated local demo; keep the servers bound to localhost. Do n
 - Trimmed metadata and an unpublished story stored in PostgreSQL through Dapper.
 - Private media in the repository's ignored `.local/media/`, with generated identity-based filenames. Client filenames cannot select a destination.
 - Basic file-header checks; these do not prove complete media decodability. Actual decoding/transcoding belongs to the later processing feature.
-- A confirmation that does not claim AI processing, publication or approval happened.
+- An unpublished confirmation linking to manual transcript/translation editing, without claiming AI processing or approval happened.
 
-No public recording-serving route, AI calls, accounts, approval workflow or feed playback are added.
+No public recording-serving route, AI calls, accounts, approval workflow or feed playback are added. Manual text editing is documented in docs/manual-story-editor.md.
 The metadata lookup is also unauthenticated and is for local development only.
 
 ## Database and configuration
