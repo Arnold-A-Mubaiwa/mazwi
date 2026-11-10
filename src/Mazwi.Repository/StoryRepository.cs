@@ -61,7 +61,13 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
                 d.IsApproved, new TranslationNotes(d.Notes))), row.ReviewVersion, row.OriginalApproved);
     }
 
-    public async Task SaveTranscriptAsync(Story story, CancellationToken cancellationToken)
+    public Task SaveTranscriptAsync(Story story, CancellationToken cancellationToken) =>
+        SaveTranscriptCoreAsync(story, null, cancellationToken);
+
+    public Task SaveAiTranscriptAsync(Story story, Guid expectedVersion, CancellationToken cancellationToken) =>
+        SaveTranscriptCoreAsync(story, expectedVersion, cancellationToken);
+
+    private async Task SaveTranscriptCoreAsync(Story story, Guid? expectedVersion, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(story);
         if (story.Transcript is null)
@@ -71,7 +77,12 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
 
         await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken);
         await using NpgsqlTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
-        await LockAsync(connection, transaction, story.Id, cancellationToken);
+        Guid version = await LockAsync(connection, transaction, story.Id, cancellationToken);
+        if (expectedVersion.HasValue && version != expectedVersion.Value)
+        {
+            throw new StoryConflictException();
+        }
+
         string? previous = await connection.QuerySingleOrDefaultAsync<string>(new CommandDefinition(
             "SELECT transcript FROM stories WHERE id = @Id", new { story.Id }, transaction, cancellationToken: cancellationToken));
         if (previous != story.Transcript.Value)
