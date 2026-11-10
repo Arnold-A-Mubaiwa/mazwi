@@ -13,7 +13,7 @@ This is an unauthenticated local demo; keep the servers bound to localhost. Do n
 - Basic file-header checks; these do not prove complete media decodability. Actual decoding/transcoding belongs to the later processing feature.
 - An unpublished confirmation linking to manual transcript/translation editing, without claiming AI processing or approval happened.
 
-No public recording-serving route, AI calls, accounts, approval workflow or feed playback are added. Manual text editing is documented in docs/manual-story-editor.md.
+Uploads are not served through a public static folder. Later completed issues add local artist review/player routes and approval-checked viewer playback; see docs/artist-approval.md and docs/viewer-feed.md. No AI calls or accounts are added. Manual editing is documented in docs/manual-story-editor.md.
 The metadata lookup is also unauthenticated and is for local development only.
 
 ## Database and configuration

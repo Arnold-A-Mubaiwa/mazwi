@@ -1,0 +1,36 @@
+using Mazwi.Domain;
+using NSubstitute;
+
+namespace Mazwi.Application.Tests;
+
+public sealed class StoryStudioServiceTests
+{
+    [Fact]
+    public async Task GetPageAsync_LocalDrafts_ReturnsSummariesAndPassesPagination()
+    {
+        // Arrange
+        var repository = Substitute.For<IStoryRepository>();
+        Story story = Story.Upload(new StoryDetails("Studio story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 19), true);
+        repository.ListIdsAsync(false, 20, 1, Arg.Any<CancellationToken>()).Returns(new[] { story.Id });
+        repository.GetAsync(story.Id, Arg.Any<CancellationToken>()).Returns(story);
+        using var cancellation = new CancellationTokenSource();
+        // Act
+        StoryStudioPageDto page = await new StoryStudioService(repository).GetPageAsync(20, 1, cancellation.Token);
+        // Assert
+        Assert.Equal("unpublished", Assert.Single(page.Items).Status); Assert.Equal(21, page.NextOffset);
+        await repository.Received(1).ListIdsAsync(false, 20, 1, cancellation.Token);
+        await repository.Received(1).GetAsync(story.Id, cancellation.Token);
+    }
+
+    [Fact]
+    public async Task GetPageAsync_RemovedOrEmptyRecords_ReturnsEmptyPage()
+    {
+        // Arrange
+        var repository = Substitute.For<IStoryRepository>();
+        repository.ListIdsAsync(false, 0, 20, Arg.Any<CancellationToken>()).Returns(new[] { Guid.NewGuid() });
+        // Act
+        StoryStudioPageDto page = await new StoryStudioService(repository).GetPageAsync(0, 20, CancellationToken.None);
+        // Assert
+        Assert.Empty(page.Items); Assert.Null(page.NextOffset);
+    }
+}

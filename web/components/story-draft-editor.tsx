@@ -53,7 +53,9 @@ export function StoryDraftEditor({ id }: { id: string }) {
         setMessage("Original transcript saved. Recheck existing translations if you changed its meaning.");
       } else {
         setTranslations(current => ({ ...current, [section]: updated.translations.find(item => item.language === section)?.text ?? "" }));
-        setMessage(`${LANGUAGES.find(language => language.code === section)?.name} translation saved as a draft. It is not approved or published.`);
+        setMessage(updated.translations.find(item => item.language === section)?.status === "approved"
+          ? "Unchanged translation saved. Its existing approval is kept."
+          : `${LANGUAGES.find(language => language.code === section)?.name} translation saved as a draft. It is not approved or published.`);
       }
     } catch (failure) {
       if (!saving.current.signal.aborted) setSaveError(failure instanceof Error ? failure.message : "Could not save. Your text is still here.");
@@ -99,7 +101,7 @@ export function StoryDraftEditor({ id }: { id: string }) {
 
   return <>
     <div className="draft-story-heading"><div><h2>{draft.title}</h2><p>By {draft.artistName} · Original language: {originalLanguage}</p></div><span className="draft-badge">{draft.originalApproved ? "Original approved" : "Unpublished"}</span></div>
-    <p className="draft-return-note">Bookmark this editing link to come back to your saved work. Keep a copy of any unsaved text before leaving the page.</p>
+    <p className="draft-return-note"><Link className="text-link" href="/studio">Back to your studio ↗</Link> · Keep a copy of any unsaved text before leaving the page.</p>
     <div className="draft-grid">
       <section className="draft-card" aria-labelledby="original-heading">
         <p className="eyebrow">01 / THE ORIGINAL WORDS</p><h2 id="original-heading">Start in {originalLanguage}.</h2>
