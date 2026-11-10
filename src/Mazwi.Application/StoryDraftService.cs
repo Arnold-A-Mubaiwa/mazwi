@@ -2,7 +2,7 @@ using Mazwi.Domain;
 
 namespace Mazwi.Application;
 
-public sealed class StoryDraftService(IStoryRepository repository) : IStoryDraftService
+public sealed class StoryDraftService(IStoryRepository repository, ITranslationDrafter? drafter = null) : IStoryDraftService
 {
     public async Task<StoryDraftDto?> GetAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -24,6 +24,9 @@ public sealed class StoryDraftService(IStoryRepository repository) : IStoryDraft
     }
 
     public async Task<StoryDraftDto?> SaveTranslationAsync(Guid id, string language, string text, CancellationToken cancellationToken)
+        => await SaveTranslationWithNotesAsync(id, language, text, null, cancellationToken);
+
+    public async Task<StoryDraftDto?> SaveTranslationWithNotesAsync(Guid id, string language, string text, IReadOnlyList<string>? notes, CancellationToken cancellationToken)
     {
         Story? story = await repository.GetAsync(id, cancellationToken);
         if (story is null)
@@ -31,8 +34,30 @@ public sealed class StoryDraftService(IStoryRepository repository) : IStoryDraft
             return null;
         }
 
-        TranslationDraft draft = story.SetTranslation(language, text);
+        TranslationDraft draft = story.SetTranslation(language, text, notes is null ? null : new TranslationNotes(notes));
         await repository.SaveTranslationAsync(id, draft, cancellationToken);
+        return await GetAsync(id, cancellationToken);
+    }
+
+    public async Task<StoryDraftDto?> DraftTranslationAsync(Guid id, string language, Guid expectedVersion, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        Story? story = await repository.GetAsync(id, cancellationToken);
+        if (story is null)
+        {
+            return null;
+        }
+
+        string source = story.GetAiTranslationSource(language, expectedVersion);
+        if (drafter is null)
+        {
+            throw new TranslationDraftUnavailableException();
+        }
+
+        TranslationDraftResult result = await drafter.DraftAsync(source, story.Details.Language, language, story.Details.Type, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        TranslationDraft draft = story.SetAiTranslation(language, result, expectedVersion);
+        await repository.SaveAiTranslationAsync(id, draft, expectedVersion, cancellationToken);
         return await GetAsync(id, cancellationToken);
     }
 }

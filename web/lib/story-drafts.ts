@@ -1,7 +1,7 @@
 import { LANGUAGES, type LanguageCode } from "./languages.ts";
 
 export const MAX_STORY_TEXT = 20_000;
-export type TranslationDraft = { language: LanguageCode; text: string; status: "draft" | "approved"; recordingId?: string | null; recordingExtension?: string | null };
+export type TranslationDraft = { language: LanguageCode; text: string; status: "draft" | "approved"; recordingId?: string | null; recordingExtension?: string | null; notes?: string[] | null };
 export type StoryDraft = {
   id: string; title: string; artistName: string; language: LanguageCode; status: "unpublished" | "published";
   reviewVersion: string; originalApproved: boolean; recordingExtension: string;
@@ -22,7 +22,8 @@ function isLanguage(value: unknown): value is LanguageCode {
 function isTranslation(value: unknown): value is TranslationDraft {
   if (!value || typeof value !== "object") return false;
   const draft = value as Record<string, unknown>;
-  return isLanguage(draft.language) && typeof draft.text === "string" && ["draft", "approved"].includes(String(draft.status));
+  return isLanguage(draft.language) && typeof draft.text === "string" && ["draft", "approved"].includes(String(draft.status))
+    && (draft.notes == null || (Array.isArray(draft.notes) && draft.notes.length <= 20 && draft.notes.every(note => typeof note === "string" && note.trim().length > 0 && note.length <= 1000)));
 }
 
 export async function readDraft(response: Response, id: string): Promise<StoryDraft> {
@@ -30,6 +31,8 @@ export async function readDraft(response: Response, id: string): Promise<StoryDr
     if (response.status === 404) throw new Error("This story could not be found. Check the editing link or upload a story first.");
     if (response.status === 409) throw new Error("This story changed. Reload the page and review the saved content before approving or uploading again. Your typed text is still here.");
     if (response.status === 413) throw new Error("The recording must be 25 MB or smaller.");
+    if (response.status === 422) throw new Error("Save and approve the original first. AI drafts need a different supported language and at most 6,000 source characters.");
+    if (response.status === 502 || response.status === 504) throw new Error("AI translation is unavailable. Your saved draft has not changed. Please try again later.");
     if (response.status === 400) {
       const problem = await response.json().catch(() => null);
       throw new Error(typeof problem?.detail === "string" ? problem.detail.slice(0, 300) : "Check the text and translation language, then try again.");
@@ -62,11 +65,17 @@ export async function getStoryDraft(id: string, signal?: AbortSignal): Promise<S
   return readDraft(await fetch(`/api/stories/${encodeURIComponent(id)}/drafts`, { cache: "no-store", signal }), id);
 }
 
-export async function saveStoryText(id: string, section: "transcript" | LanguageCode, text: string, signal?: AbortSignal): Promise<StoryDraft> {
+export async function saveStoryText(id: string, section: "transcript" | LanguageCode, text: string, signal?: AbortSignal, notes?: string[]): Promise<StoryDraft> {
   const invalid = storyTextError(text);
   if (invalid) throw new Error(invalid);
   const suffix = section === "transcript" ? "transcript" : `translations/${encodeURIComponent(section)}`;
   return readDraft(await fetch(`/api/stories/${encodeURIComponent(id)}/drafts/${suffix}`, {
-    method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }), signal,
+    method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, ...(section === "transcript" ? {} : { notes }) }), signal,
+  }), id);
+}
+
+export async function draftTranslation(id: string, language: LanguageCode, reviewVersion: string, signal?: AbortSignal): Promise<StoryDraft> {
+  return readDraft(await fetch(`/api/stories/${encodeURIComponent(id)}/drafts/translations/${language}/ai-draft`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reviewVersion }), signal,
   }), id);
 }

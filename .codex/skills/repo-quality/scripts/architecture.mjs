@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const dependencies = { Domain: [], Application: ['Domain'], Repository: ['Domain'], WebApi: ['Application', 'Repository'] };
+const dependencies = { Domain: [], Application: ['Domain'], Repository: ['Domain'], Ai: ['Domain'], WebApi: ['Application', 'Repository', 'Ai'] };
 const sqlPattern = /\b(?:SELECT\s+.+?\s+FROM|INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM|CREATE\s+TABLE|ALTER\s+TABLE|DROP\s+TABLE)\b/is;
 
 export function inspectProject(layer, xml, files) {
@@ -28,8 +28,11 @@ export function inspectProject(layer, xml, files) {
     if (layer === 'Domain' && /\b(?:Dapper|Npgsql|Microsoft\.AspNetCore|DbUp)\b/.test(text)) {
       failures.push(`${path}: infrastructure dependency in Domain`);
     }
-    if (layer === 'Application' && /\b(?:Dapper|Npgsql|Microsoft\.AspNetCore|DbUp|Mazwi\.Repository)\b/.test(text)) {
+    if (layer === 'Application' && /\b(?:Dapper|Npgsql|Microsoft\.AspNetCore|DbUp|Mazwi\.Repository|Mazwi\.Ai)\b/.test(text)) {
       failures.push(`${path}: infrastructure dependency in Application`);
+    }
+    if (layer === 'Ai' && /\b(?:Dapper|Npgsql|Microsoft\.AspNetCore|DbUp|Mazwi\.Repository|Mazwi\.Application|Mazwi\.WebApi)\b/.test(text)) {
+      failures.push(`${path}: forbidden infrastructure or outward dependency in Ai`);
     }
   }
   return failures;
@@ -47,7 +50,7 @@ function sourceFiles(directory) {
 export function checkArchitecture(root = '.') {
   const failures = [];
   const projectDirectories = readdirSync(join(root, 'src'), { withFileTypes: true }).filter((entry) => entry.isDirectory());
-  if (projectDirectories.length !== 4) failures.push('Expected exactly four production projects.');
+  if (projectDirectories.length !== 5) failures.push('Expected exactly five production projects.');
   for (const entry of projectDirectories) {
     const layer = entry.name.replace('Mazwi.', '');
     if (!(layer in dependencies)) { failures.push(`Unexpected production project: ${entry.name}`); continue; }

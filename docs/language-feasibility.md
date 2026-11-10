@@ -1,13 +1,13 @@
 ﻿# Mazwi language feasibility
 
-Development-only evaluation tool, not an AI integration in the Mazwi app.
+This page documents the development evaluation tool and its language-quality limits. The app now has opt-in AI translation drafts (docs/ai-translation-drafts.md); transcription and generated voices remain separate evaluation stages.
 Primary languages: Shona (`sn`) and isiXhosa (`xh`); Swahili (`sw`) and English (`en`) are also accepted.
 
 ## Evidence and limits
 
 The first live automatic evaluation completed its API requests but **failed human review**: source transcripts were incorrect and downstream translations were unreliable. API access works; language quality is not established. Existing private outputs are retained as evidence, not demo content.
 
-Issue #21 replaces the automatic pipeline with separate stages. A corrected, user-supplied Shona reference and English meaning were approved locally, then used for one text-only isiXhosa translation. That draft has no automatic content flags, but still needs native-speaker approval. No new voice was generated for it.
+Issue #21 replaces the automatic pipeline with separate stages. The user approved the isiXhosa text produced from their corrected Shona reference and English meaning. A subsequent generated voice was rated pronunciation good but naturalness bad, and rejected for demo use. This short example does not establish quality for other stories or languages.
 
 Recordings, reference text, approvals and generated files stay in ignored `.local/language-check/`. Nothing is published to the app. These local review records are an operator workflow, not authenticated identities or tamper-proof proof of consent.
 

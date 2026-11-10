@@ -10,15 +10,19 @@ public sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsSer
     {
         bool invalidInput = exception is DomainException;
         bool conflict = exception is StoryConflictException;
-        context.Response.StatusCode = conflict ? StatusCodes.Status409Conflict : invalidInput ? StatusCodes.Status400BadRequest : StatusCodes.Status500InternalServerError;
+        bool notAllowed = exception is AiDraftNotAllowedException;
+        bool upstream = exception is TranslationDraftUnavailableException;
+        context.Response.StatusCode = exception is TranslationDraftUnavailableException { TimedOut: true } ? StatusCodes.Status504GatewayTimeout
+            : upstream ? StatusCodes.Status502BadGateway : notAllowed ? StatusCodes.Status422UnprocessableEntity
+            : conflict ? StatusCodes.Status409Conflict : invalidInput ? StatusCodes.Status400BadRequest : StatusCodes.Status500InternalServerError;
         await problemDetailsService.WriteAsync(new ProblemDetailsContext
         {
             HttpContext = context,
             ProblemDetails = new ProblemDetails
             {
                 Status = context.Response.StatusCode,
-                Title = conflict ? "Story changed." : invalidInput ? "Invalid input." : "An unexpected error occurred.",
-                Detail = invalidInput || conflict ? exception.Message : null,
+                Title = upstream ? "AI translation unavailable." : notAllowed ? "AI draft not allowed." : conflict ? "Story changed." : invalidInput ? "Invalid input." : "An unexpected error occurred.",
+                Detail = invalidInput || conflict || notAllowed || upstream ? exception.Message : null,
             },
         });
         return true;

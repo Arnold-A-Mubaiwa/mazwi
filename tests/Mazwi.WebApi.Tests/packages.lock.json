@@ -445,6 +445,12 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
+      "mazwi.ai": {
+        "type": "Project",
+        "dependencies": {
+          "Mazwi.Domain": "[1.0.0, )"
+        }
+      },
       "mazwi.application": {
         "type": "Project",
         "dependencies": {
@@ -466,6 +472,7 @@
       "mazwi.webapi": {
         "type": "Project",
         "dependencies": {
+          "Mazwi.Ai": "[1.0.0, )",
           "Mazwi.Application": "[1.0.0, )",
           "Mazwi.Repository": "[1.0.0, )"
         }

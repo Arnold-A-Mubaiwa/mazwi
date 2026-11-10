@@ -37,7 +37,8 @@ Dependencies point inward only:
 - Mazwi.Domain: entities, immutable record value objects, aggregates, domain services/exceptions, repository interfaces. No project/package references, Dapper, SQL, or ASP.NET.
 - Mazwi.Application: use cases, DTOs, orchestration; references Domain only. Database access only through Domain repository interfaces.
 - Mazwi.Repository: Dapper/Npgsql implementations, SQL, versioned DbUp migrations; references Domain only.
-- Mazwi.WebApi: thin controllers, request/response models, DI composition root; references Application and Repository only. Validate input, call one app service, return its result; no business rules or SQL.
+- Mazwi.Ai: external AI/media adapters; references Domain only, no packages or SQL. Use HttpClient/System.Text.Json, cancellation and safe errors.
+- Mazwi.WebApi: thin controllers, request/response models, DI composition root; references Application, Repository and Ai only. Validate input, call one app service, return its result; no business rules or SQL.
 - Business rules live in rich Domain entities/value objects, not app services or controllers. No anemic models.
 - Encapsulate state with private setters or getters; mutate only through invariant-enforcing methods. Constructors/factories reject invalid state. Entities have identity; value objects are immutable records.
 - Program to interfaces, inject dependencies through constructors, follow SOLID; one class has one responsibility.

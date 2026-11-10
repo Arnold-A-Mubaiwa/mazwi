@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Mazwi.Domain/Mazwi.Domain.csproj" />
+  </ItemGroup>
+</Project>
