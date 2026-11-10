@@ -82,6 +82,15 @@ export async function draftTranslation(id: string, language: LanguageCode, revie
   }), id);
 }
 
+export async function draftTranscript(id: string, reviewVersion: string, signal?: AbortSignal): Promise<StoryDraft> {
+  const response = await fetch(`/api/stories/${encodeURIComponent(id)}/drafts/transcript/ai-draft`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reviewVersion }), signal,
+  });
+  if (response.status === 422) throw new Error("The original recording is missing. Upload the story again before requesting an AI transcript.");
+  if (response.status === 502 || response.status === 504) throw new Error("AI transcription is unavailable. Your saved transcript has not changed. Please try again later.");
+  return readDraft(response, id);
+}
+
 export async function generateVoice(id: string, language: LanguageCode, reviewVersion: string, signal?: AbortSignal): Promise<StoryDraft> {
   const response = await fetch(`/api/stories/${encodeURIComponent(id)}/drafts/translations/${language}/ai-voice`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reviewVersion }), signal,

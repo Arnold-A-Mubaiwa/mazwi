@@ -56,6 +56,14 @@ public sealed class Story
         ReviewVersion = Guid.NewGuid();
     }
 
+    // An AI transcript is a normal source edit: it revokes every approval. The version check stops it overwriting newer edits.
+    public void SetAiTranscript(StoryText transcript, Guid expectedVersion)
+    {
+        ArgumentNullException.ThrowIfNull(transcript);
+        EnsureVersion(expectedVersion);
+        SetTranscript(transcript.Value);
+    }
+
     public TranslationDraft SetTranslation(string language, string text, TranslationNotes? notes = null, bool requireReview = false)
     {
         if (Transcript is null)

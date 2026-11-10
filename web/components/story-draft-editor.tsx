@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { LANGUAGES, type LanguageCode } from "@/lib/languages";
-import { getStoryDraft, saveStoryText, approveStory, uploadTranslationRecording, draftTranslation, generateVoice, MAX_STORY_TEXT, MAX_VOICE_TEXT, type StoryDraft } from "@/lib/story-drafts";
+import { getStoryDraft, saveStoryText, approveStory, uploadTranslationRecording, draftTranslation, draftTranscript, generateVoice, MAX_STORY_TEXT, MAX_VOICE_TEXT, type StoryDraft } from "@/lib/story-drafts";
 import { FEATURES } from "@/lib/config";
 import { recordingError } from "@/lib/stories";
 import { RecordingPlayer } from "./recording-player";
@@ -13,7 +13,7 @@ export function StoryDraftEditor({ id }: { id: string }) {
   const [transcript, setTranscript] = useState("");
   const [translations, setTranslations] = useState<Partial<Record<LanguageCode, string>>>({});
   const [notes, setNotes] = useState<Partial<Record<LanguageCode, string[]>>>({});
-  const [aiPending, setAiPending] = useState<"translation" | "voice" | null>(null);
+  const [aiPending, setAiPending] = useState<"transcript" | "translation" | "voice" | null>(null);
   const [target, setTarget] = useState<LanguageCode>("xh");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -85,6 +85,21 @@ export function StoryDraftEditor({ id }: { id: string }) {
     } finally { setBusy(false); setAiPending(null); }
   }
 
+  async function generateTranscript() {
+    if (!draft || busy || unsaved) return;
+    if (draft.transcript && !window.confirm("Replace your saved transcript with an AI draft? This removes every approval for this story.")) return;
+    setBusy(true); setAiPending("transcript"); setSaveError(null); setMessage("");
+    saving.current = new AbortController();
+    try {
+      const updated = await draftTranscript(id, draft.reviewVersion, saving.current.signal);
+      setDraft(updated);
+      setTranscript(updated.transcript ?? "");
+      setMessage("AI transcript saved as a draft. Check and correct this before approving. Nothing was approved automatically.");
+    } catch (failure) {
+      if (!saving.current.signal.aborted) setSaveError(failure instanceof Error ? failure.message : "AI transcription failed. Your saved transcript has not changed.");
+    } finally { setBusy(false); setAiPending(null); }
+  }
+
   async function generateTranslatedVoice() {
     if (!draft || busy || unsaved) return;
     const language = target;
@@ -143,6 +158,10 @@ export function StoryDraftEditor({ id }: { id: string }) {
         <p className="eyebrow">01 / THE ORIGINAL WORDS</p><h2 id="original-heading">Start in {originalLanguage}.</h2>
         <p>Listen to the original and check the words. Keep names, proverbs and line breaks.</p>
         <RecordingPlayer key={`original-${draft.reviewVersion}`} extension={draft.recordingExtension} label={`Original ${originalLanguage} recording`} src={`/api/stories/${id}/recordings/${draft.language}?v=${draft.reviewVersion}`} />
+        {FEATURES.aiTranscript && <>
+          <button className="retry-button secondary-button" type="button" disabled={busy || unsaved} onClick={() => void generateTranscript()}>AI first draft</button>
+          <p className="draft-notice"><strong>Check and correct this before approving.</strong> AI transcripts of Shona and other African languages are often wrong. Listen to the recording and fix every line. Each request incurs an API charge.</p>
+        </>}
         <form onSubmit={event => { event.preventDefault(); void save("transcript"); }}>
           <fieldset disabled={busy}><legend className="sr-only">Original transcript</legend>
             <label htmlFor="original-transcript">Original transcript</label>
@@ -198,9 +217,9 @@ export function StoryDraftEditor({ id }: { id: string }) {
         </div>}
       </section>
     </div>
-    {busy && <p className="draft-feedback" role="status">{aiPending === "voice" ? "Generating an AI voice…" : aiPending ? "Creating an AI translation draft…" : "Saving your words…"}</p>}
+    {busy && <p className="draft-feedback" role="status">{aiPending === "voice" ? "Generating an AI voice…" : aiPending === "transcript" ? "Transcribing the original recording…" : aiPending ? "Creating an AI translation draft…" : "Saving your words…"}</p>}
     {message && <p className="draft-feedback" role="status">{message}</p>}
     {saveError && <p className="upload-error" role="alert">{saveError}</p>}
-    <p className="draft-privacy-note">Nothing is approved automatically. Save and review every change before approval. AI drafting sends your saved transcript, and AI voice sends your saved translation, to OpenAI only when you request it. This local demo has no accounts; keep it on your own computer.</p>
+    <p className="draft-privacy-note">Nothing is approved automatically. Save and review every change before approval. AI transcription sends your original recording, AI drafting your saved transcript, and AI voice your saved translation to OpenAI only when you request it. This local demo has no accounts; keep it on your own computer.</p>
   </>;
 }

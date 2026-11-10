@@ -1,6 +1,6 @@
 # Mazwi: manual first-phase demo
 
-AI translation drafts are now available as an opt-in on current main; the `phase-1-manual` tag remains the original manual release. See docs/ai-translation-drafts.md. Opt-in AI voices for translations are described in docs/ai-voice.md. Original transcripts still need manual entry/correction and approval.
+AI translation drafts are now available as an opt-in on current main; the `phase-1-manual` tag remains the original manual release. See docs/ai-translation-drafts.md. Opt-in AI voices for translations are described in docs/ai-voice.md, and opt-in AI transcript first drafts in docs/ai-transcript.md. Original transcripts still need manual correction and approval.
 
 The approved manual first phase is complete. It works without OpenAI credit.
 Release tag: `phase-1-manual`. The original AI-powered `level-1` is not claimed complete.

@@ -35,6 +35,10 @@ builder.Services.AddSingleton<ITranslationDrafter>(services => new OpenAiTransla
 builder.Services.AddSingleton<ISpeechGenerator>(_ => new OpenAiSpeechGenerator(builder.Configuration["OPENAI_API_KEY"],
     builder.Configuration["MAZWI_SPEECH_MODEL"] ?? "gpt-realtime-2.1-mini"));
 builder.Services.AddScoped<IStoryVoiceService, StoryVoiceService>();
+builder.Services.AddSingleton<ITranscriber>(services => new OpenAiTranscriber(
+    services.GetRequiredService<HttpClient>(), builder.Configuration["OPENAI_API_KEY"],
+    builder.Configuration["MAZWI_TRANSCRIPTION_MODEL"] ?? "gpt-transcribe"));
+builder.Services.AddScoped<IStoryTranscriptService, StoryTranscriptService>();
 builder.Services.AddScoped<IStoryReviewService, StoryReviewService>();
 builder.Services.AddScoped<IStoryFeedService, StoryFeedService>();
 builder.Services.AddScoped<IStoryStudioService, StoryStudioService>();
