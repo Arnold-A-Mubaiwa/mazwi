@@ -50,7 +50,8 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
 
         IEnumerable<TranslationRow> drafts = await connection.QueryAsync<TranslationRow>(new CommandDefinition("""
             SELECT d.language, d.text, d.notes, d.media_id AS MediaId, d.media_extension AS MediaExtension, d.media_bytes AS MediaBytes, d.media_voice AS MediaVoice,
-                EXISTS (SELECT 1 FROM story_approvals a WHERE a.story_id = d.story_id AND a.language = d.language) AS IsApproved
+                EXISTS (SELECT 1 FROM story_approvals a WHERE a.story_id = d.story_id AND a.language = d.language) AS IsApproved,
+                EXISTS (SELECT 1 FROM story_approvals a WHERE a.story_id = d.story_id AND a.language = d.language AND a.speaker_checked) AS SpeakerChecked
             FROM story_translation_drafts d WHERE d.story_id = @Id ORDER BY d.language
             """, new { Id = id }, transaction, cancellationToken: cancellationToken));
         await transaction.CommitAsync(cancellationToken);
@@ -58,7 +59,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
             new StoryRecording(string.Concat("recording", row.Extension), row.Bytes), row.PermissionRecordedAt, row.Transcript,
             drafts.Select(d => new TranslationDraft(d.Language, d.Text,
                 d.MediaId is Guid mediaId ? new TranslatedRecording(mediaId, new StoryRecording(string.Concat("recording", d.MediaExtension), d.MediaBytes!.Value), d.MediaVoice) : null,
-                d.IsApproved, new TranslationNotes(d.Notes))), row.ReviewVersion, row.OriginalApproved);
+                d.IsApproved, new TranslationNotes(d.Notes), d.SpeakerChecked)), row.ReviewVersion, row.OriginalApproved);
     }
 
     public Task SaveTranscriptAsync(Story story, CancellationToken cancellationToken) =>
@@ -159,7 +160,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
         await transaction.CommitAsync(cancellationToken);
     }
 
-    public async Task SaveApprovalAsync(Guid storyId, string language, Guid expectedVersion, CancellationToken cancellationToken)
+    public async Task SaveApprovalAsync(Guid storyId, string language, Guid expectedVersion, bool speakerChecked, CancellationToken cancellationToken)
     {
         await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken);
         await using NpgsqlTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
@@ -169,13 +170,13 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
         }
 
         int rows = await connection.ExecuteAsync(new CommandDefinition("""
-            INSERT INTO story_approvals (story_id, language)
-            SELECT s.id, @Language FROM stories s WHERE s.id = @Id AND s.transcript IS NOT NULL
+            INSERT INTO story_approvals (story_id, language, speaker_checked)
+            SELECT s.id, @Language, @Language = s.original_language OR @SpeakerChecked FROM stories s WHERE s.id = @Id AND s.transcript IS NOT NULL
                 AND (@Language = s.original_language OR
                     (EXISTS (SELECT 1 FROM story_translation_drafts d WHERE d.story_id = s.id AND d.language = @Language)
                     AND EXISTS (SELECT 1 FROM story_approvals a WHERE a.story_id = s.id AND a.language = s.original_language)))
-            ON CONFLICT (story_id, language) DO UPDATE SET approved_at = now()
-            """, new { Id = storyId, Language = language }, transaction, cancellationToken: cancellationToken));
+            ON CONFLICT (story_id, language) DO UPDATE SET approved_at = now(), speaker_checked = EXCLUDED.speaker_checked
+            """, new { Id = storyId, Language = language, SpeakerChecked = speakerChecked }, transaction, cancellationToken: cancellationToken));
         if (rows != 1)
         {
             throw new DomainException("Save and approve the original before approving translations.");
@@ -232,6 +233,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
         public long? MediaBytes { get; set; }
         public string? MediaVoice { get; set; }
         public bool IsApproved { get; set; }
+        public bool SpeakerChecked { get; set; }
     }
 
     private sealed class StoryRow

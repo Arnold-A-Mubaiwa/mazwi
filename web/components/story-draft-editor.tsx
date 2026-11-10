@@ -15,6 +15,7 @@ export function StoryDraftEditor({ id }: { id: string }) {
   const [notes, setNotes] = useState<Partial<Record<LanguageCode, string[]>>>({});
   const [aiPending, setAiPending] = useState<"transcript" | "translation" | "voice" | null>(null);
   const [target, setTarget] = useState<LanguageCode>("xh");
+  const [speakerChecked, setSpeakerChecked] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -118,8 +119,10 @@ export function StoryDraftEditor({ id }: { id: string }) {
     setBusy(true); setSaveError(null); setMessage("");
     saving.current = new AbortController();
     try {
-      setDraft(await approveStory(id, language, draft.reviewVersion, saving.current.signal));
-      setMessage(`${LANGUAGES.find(item => item.code === language)?.name} version approved. Editing its content will require approval again.`);
+      const checked = language !== draft.language && speakerChecked;
+      setDraft(await approveStory(id, language, draft.reviewVersion, saving.current.signal, checked));
+      setSpeakerChecked(false);
+      setMessage(`${LANGUAGES.find(item => item.code === language)?.name} version approved${language === draft.language ? "" : checked ? " and marked as checked by a speaker" : ". Viewers will see it was not checked by a speaker"}. Editing its content will require approval again.`);
     } catch (failure) { setSaveError(failure instanceof Error ? failure.message : "Approval failed. Please try again."); }
     finally { setBusy(false); }
   }
@@ -149,6 +152,7 @@ export function StoryDraftEditor({ id }: { id: string }) {
   const translationReady = Boolean(draft.transcript) && transcript === draft.transcript;
   const targetText = translations[target] ?? "";
   const targetSaved = draft.translations.find(item => item.language === target);
+  const targetName = LANGUAGES.find(language => language.code === target)?.name ?? target;
 
   return <>
     <div className="draft-story-heading"><div><h2>{draft.title}</h2><p>By {draft.artistName} · Original language: {originalLanguage}</p></div><span className="draft-badge">{draft.originalApproved ? "Original approved" : "Unpublished"}</span></div>
@@ -179,7 +183,7 @@ export function StoryDraftEditor({ id }: { id: string }) {
         <form onSubmit={event => { event.preventDefault(); void save(target); }}>
           <fieldset disabled={busy || !translationReady}><legend className="sr-only">Translation draft</legend>
             <label htmlFor="translation-language">Translation language</label>
-            <select id="translation-language" value={target} onChange={event => { setTarget(event.target.value as LanguageCode); setMessage(""); }}>
+            <select id="translation-language" value={target} onChange={event => { setTarget(event.target.value as LanguageCode); setSpeakerChecked(false); setMessage(""); }}>
               {LANGUAGES.filter(language => language.code !== draft.language).map(language => <option key={language.code} value={language.code}>{language.name}</option>)}
             </select>
             {FEATURES.aiTranslation && <>
@@ -213,7 +217,10 @@ export function StoryDraftEditor({ id }: { id: string }) {
             <label className="permission-field"><input type="checkbox" name="permission" value="true" required /> I own this translated recording or have permission to upload and share it.</label>
             <button className="retry-button" type="submit">Save translated recording</button>
           </fieldset></form>
+          {targetSaved.status !== "approved" && <><label className="permission-field"><input type="checkbox" checked={speakerChecked} disabled={busy || unsaved} onChange={event => setSpeakerChecked(event.target.checked)} /> I speak {targetName} and checked this translation</label>
+          <p className="draft-notice">You can approve without speaking {targetName}. Viewers will then see that no {targetName} speaker checked it.</p></>}
           <button className="retry-button secondary-button" disabled={busy || unsaved || !draft.originalApproved || targetSaved.status === "approved"} onClick={() => void approve(target)}>{targetSaved.status === "approved" ? "Translation is approved" : "Approve translation"}</button>
+          {targetSaved.status === "approved" && <p className="draft-notice">{targetSaved.speakerChecked ? `You marked this as checked by a speaker of ${targetName}.` : `Not checked by a speaker of ${targetName}. Viewers will see this.`}</p>}
         </div>}
       </section>
     </div>

@@ -48,6 +48,7 @@ test("Feed_ApprovedVersionsLanguageNavigationAndRevocation_WorkEndToEnd", async 
   await page.keyboard.press("ArrowDown");
   await expect(page.locator(".viewer-card").getByRole("heading", { name: "First approved story" })).toBeVisible();
   await expect(page.getByText(/Approved isiXhosa text with original Shona audio/)).toBeVisible();
+  await expect(page.getByText(/Approved by Mazwi browser fixture. Not checked by an isiXhosa speaker./)).toBeVisible();
   await expect(page.locator(".viewer-text")).toContainText("Translated First approved story");
   await page.getByRole("button", { name: "Previous story", exact: true }).click();
   await expect(page.locator(".viewer-card").getByRole("heading", { name: "Second approved story" })).toBeVisible();

@@ -21,7 +21,7 @@ public sealed class TranslationNotesRepositoryTests(PostgresFixture fixture) : I
             Assert.Empty(loaded.Translations.Single(d => d.Language == "en").Notes.Items);
             foreach (string language in new[] { "sn", "xh", "en" })
             {
-                await repository.SaveApprovalAsync(story.Id, language, loaded.ReviewVersion, CancellationToken.None);
+                await repository.SaveApprovalAsync(story.Id, language, loaded.ReviewVersion, false, CancellationToken.None);
             }
 
             loaded = (await repository.GetAsync(story.Id, CancellationToken.None))!;
@@ -48,7 +48,7 @@ public sealed class TranslationNotesRepositoryTests(PostgresFixture fixture) : I
         {
             story.SetTranscript("Original"); await repository.SaveTranscriptAsync(story, CancellationToken.None);
             Story loaded = (await repository.GetAsync(story.Id, CancellationToken.None))!;
-            await repository.SaveApprovalAsync(story.Id, "sn", loaded.ReviewVersion, CancellationToken.None);
+            await repository.SaveApprovalAsync(story.Id, "sn", loaded.ReviewVersion, false, CancellationToken.None);
             loaded = (await repository.GetAsync(story.Id, CancellationToken.None))!;
             Guid version = loaded.ReviewVersion;
             var result = new TranslationDraftResult(new StoryText("AI text"), new TranslationNotes(["AI note"]));
@@ -59,14 +59,14 @@ public sealed class TranslationNotesRepositoryTests(PostgresFixture fixture) : I
             Story latest = (await repository.GetAsync(story.Id, CancellationToken.None))!;
             Assert.Equal("Newer human text", Assert.Single(latest.Translations).Text.Value);
             // Act: a fresh AI draft saves notes and revokes even an identical approved translation.
-            await repository.SaveApprovalAsync(story.Id, "xh", latest.ReviewVersion, CancellationToken.None);
+            await repository.SaveApprovalAsync(story.Id, "xh", latest.ReviewVersion, false, CancellationToken.None);
             latest = (await repository.GetAsync(story.Id, CancellationToken.None))!;
             Guid freshVersion = latest.ReviewVersion;
             await repository.SaveAiTranslationAsync(story.Id, latest.SetAiTranslation("xh", result, freshVersion), freshVersion, CancellationToken.None);
             Story saved = (await repository.GetAsync(story.Id, CancellationToken.None))!;
             Assert.Equal("AI note", Assert.Single(Assert.Single(saved.Translations).Notes.Items));
             Assert.False(Assert.Single(saved.Translations).IsApproved);
-            await repository.SaveApprovalAsync(story.Id, "xh", saved.ReviewVersion, CancellationToken.None);
+            await repository.SaveApprovalAsync(story.Id, "xh", saved.ReviewVersion, false, CancellationToken.None);
             await repository.SaveAiTranslationAsync(story.Id, new TranslationDraft("xh", "AI text", notes: new TranslationNotes(["AI note"])), saved.ReviewVersion, CancellationToken.None);
             Assert.False(Assert.Single((await repository.GetAsync(story.Id, CancellationToken.None))!.Translations).IsApproved);
         }

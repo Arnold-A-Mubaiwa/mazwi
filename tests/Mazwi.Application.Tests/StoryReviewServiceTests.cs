@@ -23,10 +23,10 @@ public sealed class StoryReviewServiceTests
         StoryReviewService service = Service(); Guid version = _story.ReviewVersion;
         _media.OpenReadAsync(_story.Id, _story.Recording, Arg.Any<CancellationToken>()).Returns(Task.FromResult<Stream?>(new MemoryStream(new byte[19])));
         // Act
-        StoryDraftDto? result = await service.ApproveAsync(_story.Id, "sn", version, CancellationToken.None);
+        StoryDraftDto? result = await service.ApproveAsync(_story.Id, "sn", version, false, CancellationToken.None);
         // Assert
         Assert.NotNull(result); Assert.True(result.OriginalApproved);
-        await _repository.Received(1).SaveApprovalAsync(_story.Id, "sn", version, CancellationToken.None);
+        await _repository.Received(1).SaveApprovalAsync(_story.Id, "sn", version, false, CancellationToken.None);
     }
 
     [Fact]
@@ -35,9 +35,9 @@ public sealed class StoryReviewServiceTests
         // Arrange
         StoryReviewService service = Service();
         // Act / Assert
-        await Assert.ThrowsAsync<StoryConflictException>(() => service.ApproveAsync(_story.Id, "sn", Guid.NewGuid(), CancellationToken.None));
-        await Assert.ThrowsAsync<DomainException>(() => service.ApproveAsync(_story.Id, "sn", _story.ReviewVersion, CancellationToken.None));
-        await _repository.DidNotReceiveWithAnyArgs().SaveApprovalAsync(default, default!, default, default);
+        await Assert.ThrowsAsync<StoryConflictException>(() => service.ApproveAsync(_story.Id, "sn", Guid.NewGuid(), false, CancellationToken.None));
+        await Assert.ThrowsAsync<DomainException>(() => service.ApproveAsync(_story.Id, "sn", _story.ReviewVersion, false, CancellationToken.None));
+        await _repository.DidNotReceiveWithAnyArgs().SaveApprovalAsync(default, default!, default, default, default);
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public sealed class StoryReviewServiceTests
         // Arrange
         var service = new StoryReviewService(_repository, _media); using var input = new MemoryStream(); Guid id = Guid.NewGuid();
         // Act / Assert
-        Assert.Null(await service.ApproveAsync(id, "sn", Guid.NewGuid(), CancellationToken.None));
+        Assert.Null(await service.ApproveAsync(id, "sn", Guid.NewGuid(), false, CancellationToken.None));
         Assert.Null(await service.GetRecordingAsync(id, "sn", CancellationToken.None));
         Assert.Null(await service.UploadRecordingAsync(new(id, "xh", "file.wav", 19, true, Guid.NewGuid()), input, CancellationToken.None));
     }

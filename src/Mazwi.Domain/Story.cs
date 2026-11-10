@@ -141,7 +141,8 @@ public sealed class Story
         ReviewVersion = Guid.NewGuid();
     }
 
-    public void Approve(string language, Guid expectedVersion)
+    // speakerChecked records whether the artist speaks the translation language and checked it; the original always counts as checked.
+    public void Approve(string language, Guid expectedVersion, bool speakerChecked = false)
     {
         EnsureVersion(expectedVersion);
         if (Transcript is null)
@@ -165,7 +166,7 @@ public sealed class Story
                 throw new DomainException("Save this translation before approval.");
             }
 
-            _translations[language] = new TranslationDraft(language, draft.Text.Value, draft.Recording, true, draft.Notes);
+            _translations[language] = new TranslationDraft(language, draft.Text.Value, draft.Recording, true, draft.Notes, speakerChecked);
         }
     }
 
@@ -224,10 +225,10 @@ public sealed class Story
 
         if (!originalAudio && translation.Recording is TranslatedRecording media)
         {
-            return new(translation.Language, translation.Language, translation.Text, media.Id, media.File, media.Voice);
+            return new(translation.Language, translation.Language, translation.Text, media.Id, media.File, media.Voice, translation.SpeakerChecked);
         }
 
-        return new(translation.Language, Details.Language, translation.Text, Id, Recording);
+        return new(translation.Language, Details.Language, translation.Text, Id, Recording, SpeakerChecked: translation.SpeakerChecked);
     }
 
     public static Story Rehydrate(Guid id, StoryDetails details, StoryRecording recording, DateTimeOffset permissionRecordedAt,

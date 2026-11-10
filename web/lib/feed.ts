@@ -3,7 +3,7 @@ import { LANGUAGES, type LanguageCode } from "./languages.ts";
 export type ViewerStory = {
   id: string; title: string; artistName: string; community: string; country: string; type: string;
   originalLanguage: LanguageCode; textLanguage: LanguageCode; audioLanguage: LanguageCode;
-  text: string; recordingExtension: string; originalRecordingExtension?: string; reviewVersion: string; availableLanguages: LanguageCode[]; mediaUrl: string; audioVoice?: "standard" | "clone" | null;
+  text: string; recordingExtension: string; originalRecordingExtension?: string; reviewVersion: string; availableLanguages: LanguageCode[]; mediaUrl: string; audioVoice?: "standard" | "clone" | null; speakerChecked?: boolean;
 };
 export type FeedPage = { items: ViewerStory[]; nextOffset: number | null };
 export function languageName(code: string): string { return LANGUAGES.find(item => item.code === code)?.name ?? code; }
@@ -11,10 +11,16 @@ export function playbackLabel(story: ViewerStory): string {
   if (story.audioVoice && story.audioLanguage !== story.originalLanguage) return `AI voice, approved by ${story.artistName}`;
   return story.audioLanguage === story.originalLanguage ? `Original ${languageName(story.audioLanguage)} audio` : `Artist-provided ${languageName(story.audioLanguage)} recording`;
 }
+// Honest about who checked a translation: the artist may not speak the language they approved.
+export function speakerNote(story: ViewerStory): string {
+  const name = languageName(story.textLanguage);
+  return story.speakerChecked === true ? `Approved by ${story.artistName}, who checked the ${name}.` : `Approved by ${story.artistName}. Not checked by ${/^[aeiou]/i.test(name) ? "an" : "a"} ${name} speaker.`;
+}
 export function viewingNote(story: ViewerStory, preferred: LanguageCode): string {
   if (story.textLanguage !== preferred) return `An approved ${languageName(preferred)} version isn’t available yet. Showing the approved ${languageName(story.textLanguage)} original.`;
-  if (story.audioLanguage !== story.textLanguage) return `Approved ${languageName(story.textLanguage)} text with original ${languageName(story.audioLanguage)} audio. No translated recording is available.`;
-  return `Artist-approved ${languageName(story.textLanguage)} version.`;
+  if (story.textLanguage === story.originalLanguage) return `Artist-approved ${languageName(story.textLanguage)} version.`;
+  if (story.audioLanguage !== story.textLanguage) return `Approved ${languageName(story.textLanguage)} text with original ${languageName(story.audioLanguage)} audio. No translated recording is available. ${speakerNote(story)}`;
+  return speakerNote(story);
 }
 function isStory(value: unknown): value is ViewerStory {
   if (!value || typeof value !== "object") return false;
@@ -23,6 +29,7 @@ function isStory(value: unknown): value is ViewerStory {
   return ["id", "title", "artistName", "community", "country", "type", "text", "recordingExtension", "reviewVersion", "mediaUrl"].every(key => typeof s[key] === "string")
     && known(s.originalLanguage) && known(s.textLanguage) && known(s.audioLanguage)
     && Array.isArray(s.availableLanguages) && s.availableLanguages.every(known)
+    && (s.speakerChecked == null || typeof s.speakerChecked === "boolean")
     && String(s.mediaUrl).startsWith(`/api/feed/${s.id}/recording?`);
 }
 async function request(url: string, signal?: AbortSignal): Promise<unknown> {

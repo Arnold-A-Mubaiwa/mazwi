@@ -39,7 +39,7 @@ Stop the app before running builds or the quality/browser checks, to avoid locke
 2. Open **Studio** to find it again, or follow the confirmation's editing link.
 3. Listen and save the original transcript and your manual translations.
 4. Optionally upload a permitted recording for each translation.
-5. Explicitly approve the original, then each translation.
+5. Explicitly approve the original, then each translation. You can approve a translation in a language you don't speak: leave **I speak <language> and checked this translation** unticked, and viewers see "Approved by <artist>. Not checked by a <language> speaker." Tick it only if you speak the language and checked the text. Any later edit or new recording resets it.
 6. Watch it on the home feed or story page; choose a language once.
 7. If no translated recording exists, Mazwi labels original audio alongside approved translated text. If the language is not approved, it labels the original-language fallback.
 8. Edit approved content and confirm it needs approval again. Source edits remove the story from viewer routes until reapproved.
