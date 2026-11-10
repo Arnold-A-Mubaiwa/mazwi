@@ -18,6 +18,7 @@ The API reads `OPENAI_API_KEY` and `MAZWI_SPEECH_MODEL` from server configuratio
 ## Rules
 
 - The saved translation must be non-empty and at most 1,800 characters (about two minutes). Longer text needs a hand-uploaded recording.
+- Editing the translation text keeps the old voice. Press **Generate voice** again so it matches before approving.
 - Generating a voice replaces that language's recording and revokes that language's approval, like an upload. Other languages keep their approval.
 - The client sends the review version it displayed. If the story changed during generation, the API returns 409 and discards the voice. Existing content is unchanged.
 - The recording is stored as mono PCM16 WAV at 24 kHz and marked with voice `standard`. The value `clone` is reserved for later and never set now.
@@ -26,7 +27,7 @@ The API reads `OPENAI_API_KEY` and `MAZWI_SPEECH_MODEL` from server configuratio
 
 `POST /api/stories/{id}/drafts/translations/{language}/ai-voice`, JSON body `{ "reviewVersion": "<current UUID>" }`, returns the saved story draft. The translation's `recordingVoice` is `standard`. Missing story returns 404, missing/oversized text 422, stale version 409, provider/configuration failure 502, and timeout 504.
 
-The adapter matches tools/language-check: one Realtime WebSocket connection per click, voice `marin`, and instructions to read the passage verbatim in the target language. The style follows the story type: story (warm and slow, like a grandmother at night), folktale (lively, with pauses), poem (measured, pausing at line breaks) and song (gentle and rhythmic, spoken, not sung). Text is split at sentence ends into parts of at most 600 characters, each spoken as one response on the same connection. There are no retries, a 3-minute timeout, and a two-minute audio cap. Any failure saves nothing. The key, upstream messages and raw exceptions are never logged or returned. A charged request cannot be undone by a failure, conflict or cancellation.
+The adapter matches tools/language-check: one Realtime WebSocket connection per click, voice `marin`, and instructions to read the passage verbatim in the target language. The style follows the story type: story (warm and slow, like a grandmother at night), folktale (lively, with pauses), poem (measured, pausing at line breaks) and song (gentle and rhythmic, spoken, not sung). Text is split at sentence ends into parts of at most 600 characters, each spoken as one response on the same connection. Multi-part speech (text over 600 characters) has not yet been tried live; listen for repeated or blended passages. There are no retries, a 3-minute timeout, and a two-minute audio cap. Any failure saves nothing. The key, upstream messages and raw exceptions are never logged or returned. A charged request cannot be undone by a failure, conflict or cancellation.
 
 The simpler `/v1/audio/speech` endpoint was not used: its models are scheduled to shut down on 2027-01-06, and it does not support `gpt-realtime-2.1-mini`.
 

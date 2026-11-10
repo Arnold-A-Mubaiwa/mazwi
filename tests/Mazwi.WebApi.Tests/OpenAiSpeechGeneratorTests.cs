@@ -125,6 +125,7 @@ public sealed class OpenAiSpeechGeneratorTests
         // Assert
         Assert.Contains(expected, instructions);
         Assert.Contains("verbatim in Shona", instructions);
+        Assert.Contains("never repeat earlier passages", instructions);
     }
 
     [Fact]
