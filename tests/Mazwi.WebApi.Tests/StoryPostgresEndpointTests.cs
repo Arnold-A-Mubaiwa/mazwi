@@ -74,6 +74,8 @@ public sealed class StoryPostgresEndpointTests
             Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/stories/{story.Id}/approvals/xh", new ApproveStoryRequest(reopened.ReviewVersion))).StatusCode);
             StoryViewResponse fallback = (await client.GetFromJsonAsync<StoryViewResponse>($"/api/feed/{story.Id}?language=xh"))!;
             Assert.Equal("xh", fallback.TextLanguage); Assert.Equal("sn", fallback.AudioLanguage);
+            Assert.False(fallback.SpeakerChecked);
+            Assert.False(Assert.Single((await client.GetFromJsonAsync<StoryDraftResponse>(draftRoute))!.Translations).SpeakerChecked);
             Assert.DoesNotContain(".local", fallback.MediaUrl);
             Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/feed?limit=0")).StatusCode);
             using var translatedForm = new MultipartFormDataContent();
@@ -86,9 +88,9 @@ public sealed class StoryPostgresEndpointTests
             Assert.Equal("draft", Assert.Single(attached.Translations).Status);
             Assert.Equal("sn", (await client.GetFromJsonAsync<StoryViewResponse>($"/api/feed/{story.Id}?language=xh"))!.TextLanguage);
             Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/api/stories/{story.Id}/recordings/xh")).StatusCode);
-            await client.PostAsJsonAsync($"/api/stories/{story.Id}/approvals/xh", new ApproveStoryRequest(attached.ReviewVersion));
+            Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/stories/{story.Id}/approvals/xh", new { reviewVersion = attached.ReviewVersion, speakerChecked = true })).StatusCode);
             StoryViewResponse translated = (await client.GetFromJsonAsync<StoryViewResponse>($"/api/feed/{story.Id}?language=xh"))!;
-            Assert.Equal("xh", translated.AudioLanguage);
+            Assert.Equal("xh", translated.AudioLanguage); Assert.True(translated.SpeakerChecked);
             Assert.Equal(HttpStatusCode.OK, (await client.GetAsync(translated.MediaUrl)).StatusCode);
             await client.PutAsJsonAsync(draftRoute + "/transcript", new { Text = "Changed original" });
             Assert.False((await client.GetFromJsonAsync<StoryDraftResponse>(draftRoute))!.OriginalApproved);

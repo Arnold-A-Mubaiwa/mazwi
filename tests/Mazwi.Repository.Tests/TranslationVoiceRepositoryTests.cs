@@ -20,7 +20,7 @@ public sealed class TranslationVoiceRepositoryTests(PostgresFixture fixture) : I
             Story loaded = (await repository.GetAsync(story.Id, CancellationToken.None))!;
             foreach (string language in new[] { "sn", "xh", "en" })
             {
-                await repository.SaveApprovalAsync(story.Id, language, loaded.ReviewVersion, CancellationToken.None);
+                await repository.SaveApprovalAsync(story.Id, language, loaded.ReviewVersion, false, CancellationToken.None);
             }
 
             loaded = (await repository.GetAsync(story.Id, CancellationToken.None))!;

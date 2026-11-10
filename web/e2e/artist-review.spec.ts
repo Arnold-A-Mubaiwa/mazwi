@@ -39,7 +39,7 @@ test("Review_RealRecordingApprovalAndReplacement_RequiresNewApproval", async ({ 
   await page.getByRole("button", { name: "Approve translation", exact: true }).click();
   await expect(page.getByRole("button", { name: "Translation is approved", exact: true })).toBeDisabled();
   await page.getByLabel("Translated recording", { exact: true }).setInputFiles({ name: "translated.wav", mimeType: "audio/wav", buffer: wav() });
-  await page.getByRole("checkbox").check();
+  await page.getByRole("checkbox", { name: /I own this translated recording/ }).check();
   await page.getByRole("button", { name: "Save translated recording", exact: true }).click();
   await expect(page.getByRole("main").getByRole("status")).toContainText("Translated recording saved as a draft");
   await expect(page.getByRole("button", { name: "Approve translation", exact: true })).toBeEnabled();

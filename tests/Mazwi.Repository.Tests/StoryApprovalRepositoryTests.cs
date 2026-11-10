@@ -18,8 +18,8 @@ public sealed class StoryApprovalRepositoryTests(PostgresFixture fixture) : ICla
             story = (await repository.GetAsync(story.Id, CancellationToken.None))!;
             Guid version = story.ReviewVersion;
             // Act
-            await repository.SaveApprovalAsync(story.Id, "sn", version, CancellationToken.None);
-            await repository.SaveApprovalAsync(story.Id, "xh", version, CancellationToken.None);
+            await repository.SaveApprovalAsync(story.Id, "sn", version, false, CancellationToken.None);
+            await repository.SaveApprovalAsync(story.Id, "xh", version, false, CancellationToken.None);
             Story approved = (await repository.GetAsync(story.Id, CancellationToken.None))!;
             // Assert
             Assert.True(approved.OriginalApproved); Assert.Equal("approved", Assert.Single(approved.Translations).Status);
@@ -29,7 +29,7 @@ public sealed class StoryApprovalRepositoryTests(PostgresFixture fixture) : ICla
             await repository.SaveTranslationAsync(story.Id, approved.Translations.Single(), CancellationToken.None);
             Story changed = (await repository.GetAsync(story.Id, CancellationToken.None))!;
             Assert.True(changed.OriginalApproved); Assert.Equal("draft", Assert.Single(changed.Translations).Status);
-            await Assert.ThrowsAsync<StoryConflictException>(() => repository.SaveApprovalAsync(story.Id, "xh", version, CancellationToken.None));
+            await Assert.ThrowsAsync<StoryConflictException>(() => repository.SaveApprovalAsync(story.Id, "xh", version, false, CancellationToken.None));
             var media = new TranslatedRecording(Guid.NewGuid(), new StoryRecording("voice.wav", 19));
             Guid current = changed.ReviewVersion;
             changed.AttachRecording("xh", media, true);

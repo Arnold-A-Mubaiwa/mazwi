@@ -4,7 +4,7 @@ namespace Mazwi.Application;
 
 public sealed class StoryReviewService(IStoryRepository repository, IStoryMediaStore mediaStore) : IStoryReviewService
 {
-    public async Task<StoryDraftDto?> ApproveAsync(Guid id, string language, Guid reviewVersion, CancellationToken cancellationToken)
+    public async Task<StoryDraftDto?> ApproveAsync(Guid id, string language, Guid reviewVersion, bool speakerChecked, CancellationToken cancellationToken)
     {
         Story? story = await repository.GetAsync(id, cancellationToken);
         if (story is null)
@@ -12,7 +12,7 @@ public sealed class StoryReviewService(IStoryRepository repository, IStoryMediaS
             return null;
         }
 
-        story.Approve(language, reviewVersion);
+        story.Approve(language, reviewVersion, speakerChecked);
         RecordingPlaybackDto? playback = await GetRecordingAsync(id,
             language == story.Details.Language || story.Translations.Single(d => d.Language == language).Recording is not null ? language : story.Details.Language,
             cancellationToken);
@@ -22,7 +22,7 @@ public sealed class StoryReviewService(IStoryRepository repository, IStoryMediaS
         }
 
         await playback.Content.DisposeAsync();
-        await repository.SaveApprovalAsync(id, language, reviewVersion, cancellationToken);
+        await repository.SaveApprovalAsync(id, language, reviewVersion, speakerChecked, cancellationToken);
         Story? saved = await repository.GetAsync(id, cancellationToken);
         return saved is null ? null : StoryDraftDto.From(saved);
     }
