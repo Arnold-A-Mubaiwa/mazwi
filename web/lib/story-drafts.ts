@@ -2,7 +2,7 @@ import { LANGUAGES, type LanguageCode } from "./languages.ts";
 
 export const MAX_STORY_TEXT = 20_000;
 export const MAX_VOICE_TEXT = 1_800;
-export type TranslationDraft = { language: LanguageCode; text: string; status: "draft" | "approved"; recordingId?: string | null; recordingExtension?: string | null; notes?: string[] | null; recordingVoice?: "standard" | "clone" | null };
+export type TranslationDraft = { language: LanguageCode; text: string; status: "draft" | "approved"; recordingId?: string | null; recordingExtension?: string | null; notes?: string[] | null; recordingVoice?: "standard" | "clone" | null; speakerChecked?: boolean };
 export type StoryDraft = {
   id: string; title: string; artistName: string; language: LanguageCode; status: "unpublished" | "published";
   reviewVersion: string; originalApproved: boolean; recordingExtension: string;
@@ -25,6 +25,7 @@ function isTranslation(value: unknown): value is TranslationDraft {
   const draft = value as Record<string, unknown>;
   return isLanguage(draft.language) && typeof draft.text === "string" && ["draft", "approved"].includes(String(draft.status))
     && (draft.recordingVoice == null || draft.recordingVoice === "standard" || draft.recordingVoice === "clone")
+    && (draft.speakerChecked == null || typeof draft.speakerChecked === "boolean")
     && (draft.notes == null || (Array.isArray(draft.notes) && draft.notes.length <= 20 && draft.notes.every(note => typeof note === "string" && note.trim().length > 0 && note.length <= 1000)));
 }
 
@@ -53,9 +54,10 @@ export async function readDraft(response: Response, id: string): Promise<StoryDr
   return draft;
 }
 
-export async function approveStory(id: string, language: LanguageCode, reviewVersion: string, signal?: AbortSignal): Promise<StoryDraft> {
+// speakerChecked: the artist speaks this language and checked the text. Approval is allowed without it; the feed then says so.
+export async function approveStory(id: string, language: LanguageCode, reviewVersion: string, signal?: AbortSignal, speakerChecked = false): Promise<StoryDraft> {
   return readDraft(await fetch(`/api/stories/${encodeURIComponent(id)}/approvals/${language}`, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reviewVersion }), signal,
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reviewVersion, speakerChecked }), signal,
   }), id);
 }
 

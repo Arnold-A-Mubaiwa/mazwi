@@ -17,8 +17,8 @@ public sealed class AiTranscriptRepositoryTests(PostgresFixture fixture) : IClas
             await repository.SaveTranscriptAsync(story, CancellationToken.None);
             await repository.SaveTranslationAsync(story.Id, story.SetTranslation("xh", "Molo"), CancellationToken.None);
             Story loaded = (await repository.GetAsync(story.Id, CancellationToken.None))!;
-            await repository.SaveApprovalAsync(story.Id, "sn", loaded.ReviewVersion, CancellationToken.None);
-            await repository.SaveApprovalAsync(story.Id, "xh", loaded.ReviewVersion, CancellationToken.None);
+            await repository.SaveApprovalAsync(story.Id, "sn", loaded.ReviewVersion, false, CancellationToken.None);
+            await repository.SaveApprovalAsync(story.Id, "xh", loaded.ReviewVersion, false, CancellationToken.None);
             loaded = (await repository.GetAsync(story.Id, CancellationToken.None))!;
             Guid version = loaded.ReviewVersion;
             loaded.SetAiTranscript(new StoryText("AI transcript"), version);

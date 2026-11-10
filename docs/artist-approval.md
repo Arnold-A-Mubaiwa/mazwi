@@ -31,3 +31,7 @@ Migration 004 adds review versions, approval rows and translated recording metad
 Tests use generated fixture identities. Approved database fixtures are removed or have their approvals revoked so synthetic approved stories do not enter the future demo feed.
 
 Verified: 171 .NET tests, 41 offline Node tests and 16 Edge browser tests; zero-warning build, format, architecture, frontend lint/types and production build all passed.
+
+## Translations the artist cannot read
+
+Approving a translation records whether the artist speaks that language and checked it (`speakerChecked`, optional in `POST /api/stories/{id}/approvals/{language}`, default false). Migration 007 adds `story_approvals.speaker_checked`; existing translation approvals load as not checked, and the original language always counts as checked. The feed says "Approved by <artist>. Not checked by a <language> speaker." or "Approved by <artist>, who checked the <language>." Editing text or replacing the recording revokes approval, which also clears the flag.

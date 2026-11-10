@@ -9,9 +9,9 @@ namespace Mazwi.WebApi.Controllers;
 public sealed class StoryReviewController(IStoryReviewService service) : ControllerBase
 {
     [HttpPost("approvals/{language}")]
-    public async Task<ActionResult<StoryDraftResponse>> Approve(Guid id, string language, ApproveStoryRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<StoryDraftResponse>> Approve(Guid id, string language, ApproveLanguageRequest request, CancellationToken cancellationToken)
     {
-        StoryDraftDto? story = await service.ApproveAsync(id, language, request.ReviewVersion, cancellationToken);
+        StoryDraftDto? story = await service.ApproveAsync(id, language, request.ReviewVersion, request.SpeakerChecked, cancellationToken);
         return story is null ? NotFound() : Ok(StoryDraftResponse.From(story));
     }
 

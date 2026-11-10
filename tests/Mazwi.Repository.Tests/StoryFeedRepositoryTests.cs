@@ -16,7 +16,7 @@ public sealed class StoryFeedRepositoryTests(PostgresFixture fixture) : IClassFi
         {
             approved.SetTranscript("Original"); await repository.SaveTranscriptAsync(approved, CancellationToken.None);
             approved = (await repository.GetAsync(approved.Id, CancellationToken.None))!;
-            await repository.SaveApprovalAsync(approved.Id, "sn", approved.ReviewVersion, CancellationToken.None);
+            await repository.SaveApprovalAsync(approved.Id, "sn", approved.ReviewVersion, false, CancellationToken.None);
             // Act
             IReadOnlyList<Guid> ids = await repository.ListIdsAsync(true, 0, 50, CancellationToken.None);
             // Assert
