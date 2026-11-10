@@ -1,3 +1,4 @@
+using Mazwi.Ai;
 using Mazwi.Application;
 using Mazwi.Domain;
 using Mazwi.Repository;
@@ -23,6 +24,14 @@ builder.Services.AddScoped<ITaskItemService, TaskItemService>();
 builder.Services.AddScoped<IStoryRepository, StoryRepository>();
 builder.Services.AddScoped<IStoryService, StoryService>();
 builder.Services.AddScoped<IStoryDraftService, StoryDraftService>();
+// A raw HttpClient has no request/response logging handlers or retry policies.
+builder.Services.AddSingleton(_ => new HttpClient(new SocketsHttpHandler { AllowAutoRedirect = false })
+{
+    Timeout = Timeout.InfiniteTimeSpan
+});
+builder.Services.AddSingleton<ITranslationDrafter>(services => new OpenAiTranslationDrafter(
+    services.GetRequiredService<HttpClient>(), builder.Configuration["OPENAI_API_KEY"],
+    builder.Configuration["MAZWI_TRANSLATION_MODEL"] ?? "gpt-6-luna"));
 builder.Services.AddScoped<IStoryReviewService, StoryReviewService>();
 builder.Services.AddScoped<IStoryFeedService, StoryFeedService>();
 builder.Services.AddScoped<IStoryStudioService, StoryStudioService>();

@@ -2,7 +2,7 @@
 
 Mazwi: Every African story, in your language. A Next.js frontend and .NET 10 LTS API with inward DDD dependencies and PostgreSQL.
 
-The [manual first-phase demo](docs/phase-1-manual.md) is complete: upload, local Studio, manual transcripts/translations, artist-provided recordings, explicit approval and approved viewer playback. It works without OpenAI credit. AI processing and later levels remain pending. The task-item API below remains the original architecture example.
+The [manual first-phase demo](docs/phase-1-manual.md) is complete: upload, local Studio, manual transcripts/translations, artist-provided recordings, explicit approval and approved viewer playback. It works without OpenAI credit. [AI translation drafts](docs/ai-translation-drafts.md) are now available behind an opt-in flag; transcription, generated voices and later levels remain pending. The task-item API below remains the original architecture example.
 
 From this repository's root in PowerShell, run `./scripts/Start-Mazwi.ps1`, then open `http://127.0.0.1:3000`. Stop with `./scripts/Stop-Mazwi.ps1`. See the manual-demo guide for setup, verification, boundaries and the `phase-1-manual` tag.
 
@@ -11,7 +11,8 @@ From this repository's root in PowerShell, run `./scripts/Start-Mazwi.ps1`, then
 - Domain: rich story/text/recording/approval rules, immutable value objects and repository interfaces; includes the original task example.
 - Application: upload, editing, review, feed and studio use cases/DTOs; depends only on Domain.
 - Repository: parameterized Dapper queries, Npgsql connections, embedded versioned DbUp scripts; depends only on Domain.
-- WebApi: thin controllers and DI composition; references Application and Repository.
+- Ai: external AI adapters using HttpClient/System.Text.Json, no packages; depends only on Domain.
+- WebApi: thin controllers and DI composition; references Application, Repository and Ai.
 - Four xUnit projects cover domain, application (NSubstitute), real PostgreSQL persistence, and HTTP endpoints (WebApplicationFactory).
 
 ## Local development

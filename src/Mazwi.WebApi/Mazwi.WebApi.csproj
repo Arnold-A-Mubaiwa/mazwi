@@ -4,6 +4,7 @@
     <UserSecretsId>mazwi-webapi-development</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../Mazwi.Ai/Mazwi.Ai.csproj" />
     <ProjectReference Include="../Mazwi.Application/Mazwi.Application.csproj" />
     <ProjectReference Include="../Mazwi.Repository/Mazwi.Repository.csproj" />
   </ItemGroup>

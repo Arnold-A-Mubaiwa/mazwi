@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { LANGUAGES, type LanguageCode } from "@/lib/languages";
-import { getStoryDraft, saveStoryText, approveStory, uploadTranslationRecording, MAX_STORY_TEXT, type StoryDraft } from "@/lib/story-drafts";
+import { getStoryDraft, saveStoryText, approveStory, uploadTranslationRecording, draftTranslation, MAX_STORY_TEXT, type StoryDraft } from "@/lib/story-drafts";
+import { FEATURES } from "@/lib/config";
 import { recordingError } from "@/lib/stories";
 import { RecordingPlayer } from "./recording-player";
 
@@ -11,6 +12,8 @@ export function StoryDraftEditor({ id }: { id: string }) {
   const [draft, setDraft] = useState<StoryDraft | null>(null);
   const [transcript, setTranscript] = useState("");
   const [translations, setTranslations] = useState<Partial<Record<LanguageCode, string>>>({});
+  const [notes, setNotes] = useState<Partial<Record<LanguageCode, string[]>>>({});
+  const [aiPending, setAiPending] = useState(false);
   const [target, setTarget] = useState<LanguageCode>("xh");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -25,6 +28,7 @@ export function StoryDraftEditor({ id }: { id: string }) {
       setDraft(story);
       setTranscript(story.transcript ?? "");
       setTranslations(Object.fromEntries(story.translations.map(translation => [translation.language, translation.text])));
+      setNotes(Object.fromEntries(story.translations.map(translation => [translation.language, translation.notes ?? []])));
       setTarget(LANGUAGES.find(language => language.code !== story.language)!.code);
     }).catch(failure => {
       if (!controller.signal.aborted) setLoadError(failure instanceof Error ? failure.message : "Could not load this story.");
@@ -34,7 +38,8 @@ export function StoryDraftEditor({ id }: { id: string }) {
   useEffect(() => () => saving.current?.abort(), []);
 
   const unsaved = draft !== null && (transcript !== (draft.transcript ?? "")
-    || Object.entries(translations).some(([language, text]) => text !== (draft.translations.find(item => item.language === language)?.text ?? "")));
+    || Object.entries(translations).some(([language, text]) => text !== (draft.translations.find(item => item.language === language)?.text ?? ""))
+    || Object.entries(notes).some(([language, values]) => JSON.stringify(values) !== JSON.stringify(draft.translations.find(item => item.language === language)?.notes ?? [])));
   useEffect(() => {
     if (!unsaved) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); };
@@ -46,13 +51,14 @@ export function StoryDraftEditor({ id }: { id: string }) {
     setBusy(true); setSaveError(null); setMessage("");
     saving.current = new AbortController();
     try {
-      const updated = await saveStoryText(id, section, section === "transcript" ? transcript : (translations[section] ?? ""), saving.current.signal);
+      const updated = await saveStoryText(id, section, section === "transcript" ? transcript : (translations[section] ?? ""), saving.current.signal, section === "transcript" ? undefined : (notes[section] ?? []));
       setDraft(updated);
       if (section === "transcript") {
         setTranscript(updated.transcript ?? "");
         setMessage("Original transcript saved. Recheck existing translations if you changed its meaning.");
       } else {
         setTranslations(current => ({ ...current, [section]: updated.translations.find(item => item.language === section)?.text ?? "" }));
+        setNotes(current => ({ ...current, [section]: updated.translations.find(item => item.language === section)?.notes ?? [] }));
         setMessage(updated.translations.find(item => item.language === section)?.status === "approved"
           ? "Unchanged translation saved. Its existing approval is kept."
           : `${LANGUAGES.find(language => language.code === section)?.name} translation saved as a draft. It is not approved or published.`);
@@ -60,6 +66,23 @@ export function StoryDraftEditor({ id }: { id: string }) {
     } catch (failure) {
       if (!saving.current.signal.aborted) setSaveError(failure instanceof Error ? failure.message : "Could not save. Your text is still here.");
     } finally { setBusy(false); }
+  }
+
+  async function generateDraft() {
+    if (!draft || busy || unsaved || !draft.originalApproved) return;
+    const language = target;
+    setBusy(true); setAiPending(true); setSaveError(null); setMessage("");
+    saving.current = new AbortController();
+    try {
+      const updated = await draftTranslation(id, language, draft.reviewVersion, saving.current.signal);
+      const generated = updated.translations.find(item => item.language === language);
+      setDraft(updated);
+      setTranslations(current => ({ ...current, [language]: generated?.text ?? "" }));
+      setNotes(current => ({ ...current, [language]: generated?.notes ?? [] }));
+      setMessage("AI draft saved. Check and correct the language, names and meaning before approving. Nothing was approved automatically.");
+    } catch (failure) {
+      if (!saving.current.signal.aborted) setSaveError(failure instanceof Error ? failure.message : "AI translation failed. Your text is still here.");
+    } finally { setBusy(false); setAiPending(false); }
   }
 
   async function approve(language: LanguageCode) {
@@ -119,7 +142,7 @@ export function StoryDraftEditor({ id }: { id: string }) {
       </section>
       <section className="draft-card" aria-labelledby="translation-heading">
         <p className="eyebrow">02 / ANOTHER LANGUAGE</p><h2 id="translation-heading">Carry the meaning.</h2>
-        <p>Write your own translation or paste one you have permission to use. Nothing here is generated by AI.</p>
+        <p>{FEATURES.aiTranslation ? "Write your own translation or request an AI draft from your approved original. Always check the language, names and meaning yourself." : "Write your own translation or paste one you have permission to use."}</p>
         {!translationReady && <p className="draft-notice">Save the original transcript first, including any changes, to edit translations.</p>}
         <form onSubmit={event => { event.preventDefault(); void save(target); }}>
           <fieldset disabled={busy || !translationReady}><legend className="sr-only">Translation draft</legend>
@@ -127,9 +150,21 @@ export function StoryDraftEditor({ id }: { id: string }) {
             <select id="translation-language" value={target} onChange={event => { setTarget(event.target.value as LanguageCode); setMessage(""); }}>
               {LANGUAGES.filter(language => language.code !== draft.language).map(language => <option key={language.code} value={language.code}>{language.name}</option>)}
             </select>
+            {FEATURES.aiTranslation && <>
+              <button className="retry-button secondary-button" type="button" disabled={busy || unsaved || !draft.originalApproved || transcript.length > 6000} onClick={() => void generateDraft()}>AI draft</button>
+              <p className="draft-notice">Save and approve the original first. AI drafts support up to 6,000 source characters and incur an API charge. Save your edits before generating a replacement.</p>
+            </>}
             <label htmlFor="translation-text">Translation text</label>
             <textarea id="translation-text" value={targetText} onChange={event => setTranslations(current => ({ ...current, [target]: event.target.value }))} maxLength={MAX_STORY_TEXT} required rows={9} aria-describedby="translation-count" />
             <p className="draft-count" id="translation-count">{targetText.length.toLocaleString()} / 20,000 characters · {targetSaved && targetSaved.text === targetText ? "Saved draft" : "Not saved"}</p>
+            {(notes[target] ?? []).length > 0 && <div className="translation-notes"><h3>Translation notes</h3>
+              {(notes[target] ?? []).map((note, index) => <div key={`${target}-${index}`}>
+                <label htmlFor={`translation-note-${index}`}>Translation note {index + 1}</label>
+                <textarea id={`translation-note-${index}`} value={note} maxLength={1000} required rows={2} onChange={event => setNotes(current => ({ ...current, [target]: (current[target] ?? []).map((value, position) => position === index ? event.target.value : value) }))} />
+                <button className="retry-button secondary-button" type="button" onClick={() => setNotes(current => ({ ...current, [target]: (current[target] ?? []).filter((_, position) => position !== index) }))}>Dismiss note {index + 1}</button>
+              </div>)}
+              <p>Save the translation draft to keep note edits or dismissals.</p>
+            </div>}
             <button className="retry-button" type="submit">Save translation draft</button>
           </fieldset>
         </form>
@@ -146,9 +181,9 @@ export function StoryDraftEditor({ id }: { id: string }) {
         </div>}
       </section>
     </div>
-    {busy && <p className="draft-feedback" role="status">Saving your words…</p>}
+    {busy && <p className="draft-feedback" role="status">{aiPending ? "Creating an AI translation draft…" : "Saving your words…"}</p>}
     {message && <p className="draft-feedback" role="status">{message}</p>}
     {saveError && <p className="upload-error" role="alert">{saveError}</p>}
-    <p className="draft-privacy-note">Nothing is approved automatically. Save and review every change before approval. No AI processing or voice generation has run. This local demo has no accounts; keep it on your own computer.</p>
+    <p className="draft-privacy-note">Nothing is approved automatically. Save and review every change before approval. AI drafting sends your saved transcript to OpenAI only when you request it. No voice is generated here. This local demo has no accounts; keep it on your own computer.</p>
   </>;
 }

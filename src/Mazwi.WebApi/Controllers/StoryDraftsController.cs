@@ -24,9 +24,16 @@ public sealed class StoryDraftsController(IStoryDraftService service) : Controll
     }
 
     [HttpPut("translations/{language}")]
-    public async Task<ActionResult<StoryDraftResponse>> SaveTranslation(Guid id, string language, SaveStoryTextRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<StoryDraftResponse>> SaveTranslation(Guid id, string language, SaveTranslationDraftRequest request, CancellationToken cancellationToken)
     {
-        StoryDraftDto? story = await service.SaveTranslationAsync(id, language, request.Text, cancellationToken);
+        StoryDraftDto? story = await service.SaveTranslationWithNotesAsync(id, language, request.Text, request.Notes, cancellationToken);
+        return story is null ? NotFound() : Ok(StoryDraftResponse.From(story));
+    }
+
+    [HttpPost("translations/{language}/ai-draft")]
+    public async Task<ActionResult<StoryDraftResponse>> AiDraft(Guid id, string language, ApproveStoryRequest request, CancellationToken cancellationToken)
+    {
+        StoryDraftDto? story = await service.DraftTranslationAsync(id, language, request.ReviewVersion, cancellationToken);
         return story is null ? NotFound() : Ok(StoryDraftResponse.From(story));
     }
 }
