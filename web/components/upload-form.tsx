@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { FEATURES } from "@/lib/config";
 import { LANGUAGES } from "@/lib/languages";
 import { recordingError, uploadStory, type UploadedStory } from "@/lib/stories";
 
@@ -31,8 +33,9 @@ export function UploadForm() {
     <p className="eyebrow">SAVED · UNPUBLISHED</p>
     <h2>Your story has a home.</h2>
     <p><strong>{story.title}</strong> by {story.artistName} has been saved on this computer.</p>
-    <p>It is not in the feed. Transcription, translation and artist review will come next. No AI processing has run.</p>
+    <p>It is not in the feed. You can write a transcript and manual translations next. Artist approval and playback are coming later. No AI processing has run.</p>
     <p className="upload-reference">Story reference: {story.id}</p>
+    {FEATURES.manualEditing && <p><Link className="text-link" href={`/story/${story.id}/review`}>Write transcript and translations <span aria-hidden="true">↗</span></Link></p>}
     <button className="retry-button" onClick={() => setStory(null)}>Upload another story</button>
   </section>;
 

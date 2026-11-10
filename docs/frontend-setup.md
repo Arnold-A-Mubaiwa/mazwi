@@ -2,7 +2,7 @@
 
 Issue #9 adds a local Next.js App Router / TypeScript / Tailwind shell in `web/`.
 Business logic, AI calls, SQL, and persistence remain in the .NET backend layers.
-Issue #11 adds local story uploads. Translation, feed media and authentication remain pending; see docs/story-upload.md.
+Issue #11 adds local story uploads; issue #13 adds manual transcripts and translation drafts. AI processing, approval, feed media and authentication remain pending. See docs/story-upload.md and docs/manual-story-editor.md.
 
 ## Install and validate (repository root)
 
@@ -23,14 +23,16 @@ Generated `.next/`, browser artifacts, TypeScript build metadata, and `node_modu
 
 ## Run locally
 
-After building the .NET solution and frontend, use two terminals whose working directory is `web/`:
+After building the .NET solution and frontend, use two PowerShell terminals in the repository root.
+In the API terminal, load the ignored local settings first. A normal `dotnet run` does not read `.env` automatically; skipping this step can leave the website reachable while database-backed uploads fail.
 
 ```powershell
-dotnet run --project ../src/Mazwi.WebApi --no-launch-profile --no-build --urls http://127.0.0.1:5046
+. ./scripts/Set-LocalEnvironment.ps1
+dotnet run --project src/Mazwi.WebApi --no-launch-profile --no-build --urls http://127.0.0.1:5046
 ```
 
 ```powershell
-npm.cmd run start -- --port 3000
+npm.cmd --prefix web run start -- --port 3000
 ```
 
 Open `http://127.0.0.1:3000`. The API is `http://127.0.0.1:5046`.
@@ -45,7 +47,7 @@ Do not put OpenAI keys, database credentials, SQL, or business rules in frontend
 The UI uses a dark earth palette, ochre and red accents, large headings, and a phone-first layout.
 The language preference is saved locally; choosing a language does not claim that generated audio has passed review.
 Until approval and playback are implemented, the viewer sees an honest empty state instead of fake approved recordings.
-`web/lib/config.ts` holds `FEATURES`; local uploads are enabled and later features remain disabled. Client flags are display controls, not authorization.
+`web/lib/config.ts` holds `FEATURES`; local uploads and manual editing are enabled, while AI processing and later features remain disabled. Client flags are display controls, not authorization.
 
 The .NET build and format checks pass, and the health test runs without database credentials.
 The PostgreSQL-dependent suite now passes with the configured local test database. Missing credentials still fail explicitly; never silently skip these tests.

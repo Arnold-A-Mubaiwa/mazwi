@@ -14,7 +14,7 @@ export default function UploadPage() {
       <p className="eyebrow">YOUR WORDS. YOUR SAY.</p>
       <h2>Saved here.<br />Not shared yet.</h2>
       <p>Your recording stays on this computer. Uploading does not publish it or send it to an AI service.</p>
-      <p>Translations and artist approval are coming in the next steps. Your voice will never be cloned from this permission.</p>
+      <p>You can write a transcript and manual translations after uploading. Artist approval is coming next. Your voice will never be cloned from this permission.</p>
       <p className="upload-local-note">Local demo · Use recordings you own or have permission to share.</p>
     </aside></div>
   </main>;

@@ -12,7 +12,7 @@ namespace Mazwi.WebApi.Tests;
 public sealed class StoryPostgresEndpointTests
 {
     [Fact]
-    public async Task UploadAndGet_LocalPostgresAndFilesystem_RoundTripsPrivateRecording()
+    public async Task UploadAndEdit_LocalPostgresAndFilesystem_RoundTripsPrivateRecordingAndDrafts()
     {
         // Arrange
         string connectionString = Environment.GetEnvironmentVariable("MAZWI_TEST_CONNECTION_STRING")
@@ -47,6 +47,17 @@ public sealed class StoryPostgresEndpointTests
             Assert.Equal("unpublished", loaded.Status);
             Assert.Equal("RIFF0000WAVEdata0000"u8.ToArray(), await File.ReadAllBytesAsync(Path.Combine(root, $"{story.Id:N}.wav")));
             Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/media/{story.Id:N}.wav")).StatusCode);
+
+            string draftRoute = $"/api/stories/{story.Id}/drafts";
+            HttpResponseMessage transcript = await client.PutAsJsonAsync(draftRoute + "/transcript", new { Text = "Tsuro's words\nSecond line" });
+            Assert.Equal(HttpStatusCode.OK, transcript.StatusCode);
+            HttpResponseMessage translation = await client.PutAsJsonAsync(draftRoute + "/translations/xh", new { Text = "Manual translation\nSecond line" });
+            Assert.Equal(HttpStatusCode.OK, translation.StatusCode);
+            StoryDraftResponse? reopened = await client.GetFromJsonAsync<StoryDraftResponse>(draftRoute);
+            Assert.NotNull(reopened);
+            Assert.Equal("Tsuro's words\nSecond line", reopened.Transcript);
+            Assert.Equal("unpublished", reopened.Status);
+            Assert.Equal(new TranslationDraftResponse("xh", "Manual translation\nSecond line", "draft"), Assert.Single(reopened.Translations));
         }
         finally
         {

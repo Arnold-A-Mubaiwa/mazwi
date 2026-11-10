@@ -27,11 +27,13 @@ public sealed record StoryDetails
             throw new DomainException("Choose story, poem, folktale, or song.");
         }
 
-        if (Language is not ("sn" or "xh" or "sw" or "en"))
+        if (!SupportsLanguage(Language))
         {
             throw new DomainException("Choose Shona, isiXhosa, Swahili, or English.");
         }
     }
+
+    public static bool SupportsLanguage(string language) => language is "sn" or "xh" or "sw" or "en";
 
     private static string Required(string? value, string name, int maximum)
     {
