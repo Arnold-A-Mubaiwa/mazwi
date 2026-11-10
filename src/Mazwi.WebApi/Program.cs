@@ -32,6 +32,9 @@ builder.Services.AddSingleton(_ => new HttpClient(new SocketsHttpHandler { Allow
 builder.Services.AddSingleton<ITranslationDrafter>(services => new OpenAiTranslationDrafter(
     services.GetRequiredService<HttpClient>(), builder.Configuration["OPENAI_API_KEY"],
     builder.Configuration["MAZWI_TRANSLATION_MODEL"] ?? "gpt-6-luna"));
+builder.Services.AddSingleton<ISpeechGenerator>(_ => new OpenAiSpeechGenerator(builder.Configuration["OPENAI_API_KEY"],
+    builder.Configuration["MAZWI_SPEECH_MODEL"] ?? "gpt-realtime-2.1-mini"));
+builder.Services.AddScoped<IStoryVoiceService, StoryVoiceService>();
 builder.Services.AddScoped<IStoryReviewService, StoryReviewService>();
 builder.Services.AddScoped<IStoryFeedService, StoryFeedService>();
 builder.Services.AddScoped<IStoryStudioService, StoryStudioService>();
