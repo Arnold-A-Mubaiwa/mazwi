@@ -42,6 +42,9 @@ public sealed class StoryPostgresEndpointTests
             Assert.NotNull(story);
             createdId = story.Id;
             Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/feed/{story.Id}?language=xh")).StatusCode);
+            StudioPageResponse studio = (await client.GetFromJsonAsync<StudioPageResponse>("/api/studio?limit=50"))!;
+            Assert.Contains(studio.Items, item => item.Id == story.Id && item.Status == "unpublished");
+            Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/studio?limit=0")).StatusCode);
             StoryResponse? loaded = await client.GetFromJsonAsync<StoryResponse>($"/api/stories/{story.Id}");
             // Assert
             Assert.NotNull(loaded);

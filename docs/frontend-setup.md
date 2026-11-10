@@ -2,7 +2,7 @@
 
 Issue #9 adds a local Next.js App Router / TypeScript / Tailwind shell in `web/`.
 Business logic, AI calls, SQL, and persistence remain in the .NET backend layers.
-Issue #11 adds local story uploads; issue #13 adds manual transcripts and translation drafts. AI processing, approval, feed media and authentication remain pending. See docs/story-upload.md and docs/manual-story-editor.md.
+The manual demo includes uploads, Studio, manual text, recording playback, explicit artist approval and the viewer feed. AI processing and accounts remain pending. See docs/phase-1-manual.md.
 
 ## Install and validate (repository root)
 
@@ -22,6 +22,8 @@ The test checks actual API responses through the Next.js proxy, navigation, pers
 Generated `.next/`, browser artifacts, TypeScript build metadata, and `node_modules/` are ignored by Git.
 
 ## Run locally
+
+Recommended from the repository root: `./scripts/Start-Mazwi.ps1`. Stop with `./scripts/Stop-Mazwi.ps1`. These verified Windows helpers load local settings, build/migrate, check database readiness, and protect unrelated processes. See docs/phase-1-manual.md. The two-terminal alternative below remains available.
 
 After building the .NET solution and frontend, use two PowerShell terminals in the repository root.
 In the API terminal, load the ignored local settings first. A normal `dotnet run` does not read `.env` automatically; skipping this step can leave the website reachable while database-backed uploads fail.
@@ -46,7 +48,7 @@ Do not put OpenAI keys, database credentials, SQL, or business rules in frontend
 
 The UI uses a dark earth palette, ochre and red accents, large headings, and a phone-first layout.
 The language preference is saved locally; choosing a language does not claim that generated audio has passed review.
-Until approval and playback are implemented, the viewer sees an honest empty state instead of fake approved recordings.
+Only artist-approved content enters viewer routes. An empty feed stays empty; setup does not fabricate or publish artist content.
 `web/lib/config.ts` holds `FEATURES`; local uploads and manual editing are enabled, while AI processing and later features remain disabled. Client flags are display controls, not authorization.
 
 The .NET build and format checks pass, and the health test runs without database credentials.

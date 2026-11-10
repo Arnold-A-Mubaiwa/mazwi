@@ -21,6 +21,7 @@ public sealed class StoryFeedRepositoryTests(PostgresFixture fixture) : IClassFi
             IReadOnlyList<Guid> ids = await repository.ListIdsAsync(true, 0, 50, CancellationToken.None);
             // Assert
             Assert.Contains(approved.Id, ids); Assert.DoesNotContain(draft.Id, ids);
+            Assert.Contains(draft.Id, await repository.ListIdsAsync(false, 0, 50, CancellationToken.None));
             approved.SetTranscript("Changed"); await repository.SaveTranscriptAsync(approved, CancellationToken.None);
             Assert.DoesNotContain(approved.Id, await repository.ListIdsAsync(true, 0, 50, CancellationToken.None));
             await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => repository.ListIdsAsync(true, 0, 0, CancellationToken.None));

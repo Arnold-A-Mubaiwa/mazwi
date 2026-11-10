@@ -36,6 +36,7 @@ export function UploadForm() {
     <p>It is not in the feed. You can write a transcript and manual translations next. Artist approval and playback are coming later. No AI processing has run.</p>
     <p className="upload-reference">Story reference: {story.id}</p>
     {FEATURES.manualEditing && <p><Link className="text-link" href={`/story/${story.id}/review`}>Write transcript and translations <span aria-hidden="true">↗</span></Link></p>}
+    <p><Link className="text-link" href="/studio">See all my stories ↗</Link></p>
     <button className="retry-button" onClick={() => setStory(null)}>Upload another story</button>
   </section>;
 

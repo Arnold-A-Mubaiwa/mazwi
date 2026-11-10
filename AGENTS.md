@@ -12,7 +12,8 @@ It uses C#/.NET 10 LTS, ASP.NET Core Web API, PostgreSQL, and Dapper via Npgsql;
 
 SDK 10.0.402 is pinned in global.json. Quality tooling also uses Node.js.
 - Install: `dotnet restore Mazwi.sln --configfile NuGet.Config`
-- Run (from web/): `npm.cmd run start -- --port 3000` after building; start the API as documented in docs/frontend-setup.md.
+- Run: `./scripts/Start-Mazwi.ps1` (loads ignored .env, builds, migrates and checks local readiness).
+- Stop: `./scripts/Stop-Mazwi.ps1` before builds or quality/browser checks; only helper-managed processes are stopped.
 - Build: `dotnet build`
 - Lint: `dotnet format --verify-no-changes`
 - Test: `dotnet test`

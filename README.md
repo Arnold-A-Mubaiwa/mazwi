@@ -2,12 +2,14 @@
 
 Mazwi: Every African story, in your language. A Next.js frontend and .NET 10 LTS API with inward DDD dependencies and PostgreSQL.
 
-Local story upload is available at `/upload`: save a consented recording privately and keep its metadata unpublished. Follow the confirmation link to enter and save [manual transcripts and translation drafts](docs/manual-story-editor.md). See [story upload](docs/story-upload.md) and [run instructions](docs/frontend-setup.md). AI processing, approval and the story feed are still pending. The task-item API below remains the original architecture example.
+The [manual first-phase demo](docs/phase-1-manual.md) is complete: upload, local Studio, manual transcripts/translations, artist-provided recordings, explicit approval and approved viewer playback. It works without OpenAI credit. AI processing and later levels remain pending. The task-item API below remains the original architecture example.
+
+From this repository's root in PowerShell, run `./scripts/Start-Mazwi.ps1`, then open `http://127.0.0.1:3000`. Stop with `./scripts/Stop-Mazwi.ps1`. See the manual-demo guide for setup, verification, boundaries and the `phase-1-manual` tag.
 
 ## Structure
 
-- Domain: task aggregate, immutable title value object, invariant, repository interface.
-- Application: task use cases and DTOs; depends only on Domain.
+- Domain: rich story/text/recording/approval rules, immutable value objects and repository interfaces; includes the original task example.
+- Application: upload, editing, review, feed and studio use cases/DTOs; depends only on Domain.
 - Repository: parameterized Dapper queries, Npgsql connections, embedded versioned DbUp scripts; depends only on Domain.
 - WebApi: thin controllers and DI composition; references Application and Repository.
 - Four xUnit projects cover domain, application (NSubstitute), real PostgreSQL persistence, and HTTP endpoints (WebApplicationFactory).

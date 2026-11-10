@@ -159,6 +159,20 @@ h3 { font-size: 35px; line-height: 1.14; letter-spacing: -1px; margin: 0 0 15px;
 .text-control { color: var(--ochre); margin: 15px 0 0; font-size: 13px; }
 .story-page { padding: 45px 0; max-width: 800px; margin: auto; }
 .story-language { margin: 30px 0; max-width: 400px; }
+.studio-page { padding: 65px 0; }
+.studio-page > .eyebrow { color: var(--green); }
+.studio-intro { font: 20px/1.7 Georgia, serif; color: var(--muted); max-width: 700px; }
+.studio-toolbar { display: flex; gap: 30px; justify-content: space-between; align-items: end; margin: 35px 0; }
+.studio-toolbar label { display: flex; flex-direction: column; gap: 10px; font-size: 14px; width: min(100%, 460px); }
+.studio-toolbar input { padding: 14px; border: 1px solid #414735; border-radius: 4px; background: #22261d; color: var(--paper); font: inherit; width: 100%; }
+.studio-upload { border: 1px solid var(--ochre); border-radius: 4px; color: var(--ochre); padding: 14px 18px; white-space: nowrap; }
+.studio-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 25px; }
+.studio-card { background: #1c2018; border: 1px solid var(--line); border-radius: 4px; padding: 25px; min-width: 0; }
+.studio-card .draft-badge { display: inline-block; }
+.studio-card h2 { font-size: 30px; overflow-wrap: anywhere; margin: 25px 0 15px; }
+.studio-card p { font-size: 14px; line-height: 1.8; color: var(--muted); overflow-wrap: anywhere; }
+.studio-card .studio-private { color: var(--green); font-size: 12px; }
+@media (max-width: 650px) { .studio-page { padding: 40px 0; } .studio-grid { grid-template-columns: minmax(0, 1fr); } .studio-toolbar { align-items: start; flex-direction: column; gap: 20px; } .site-header { flex-wrap: wrap; height: auto; min-height: 83px; padding: 16px 0; gap: 5px; } .site-header nav { flex-wrap: wrap; gap: 18px; } }
 @media (max-width: 650px) { .viewer-card { padding: 20px; } .viewer-heading { align-items: flex-start; } .viewer-navigation { flex-wrap: wrap; } .viewer-navigation button { font-size: 12px; } }
 .translated-recording { border-top: 1px solid var(--line); margin-top: 28px; padding-top: 15px; }
 .translated-recording input[type=file] { max-width: 100%; font: inherit; font-size: 13px; }
