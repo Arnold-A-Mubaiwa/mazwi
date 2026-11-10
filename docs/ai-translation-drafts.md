@@ -4,7 +4,7 @@ The story editor can request a translation of the saved, approved original trans
 
 ## Enable locally
 
-`FEATURES.aiTranslation` reads the public build-time boolean `NEXT_PUBLIC_MAZWI_AI_TRANSLATION`. It is off unless the value is exactly `true`. Set that flag in the build environment or ignored web/.env.local, then rebuild the frontend. Next.js bundles public variables at build time; changing only the runtime environment does not change an existing build. To disable it again, unset the flag and rebuild. Manual editing works with the flag off and without an API key.
+`FEATURES.aiTranslation` reads the public build-time boolean `NEXT_PUBLIC_MAZWI_AI_TRANSLATION`. Since Level 1 it is on unless the value is exactly `false` (see docs/level-1.md). To turn it off, set NEXT_PUBLIC_MAZWI_AI_TRANSLATION=false in the build environment or ignored web/.env.local, then rebuild the frontend. Next.js bundles public variables at build time; changing only the runtime environment does not change an existing build. To disable it again, unset the flag and rebuild. Manual editing works with the flag off and without an API key.
 
 The API reads `OPENAI_API_KEY` and `MAZWI_TRANSLATION_MODEL` from server configuration. The model defaults to the language tool's `gpt-6-luna`; no model substitution occurs. Keep the key in ignored root .env or the server environment, never in a NEXT_PUBLIC variable. The startup helper loads root .env. Restart managed services to reload server settings. There are no new packages.
 

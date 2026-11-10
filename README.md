@@ -2,7 +2,7 @@
 
 Mazwi: Every African story, in your language. A Next.js frontend and .NET 10 LTS API with inward DDD dependencies and PostgreSQL.
 
-The [manual first-phase demo](docs/phase-1-manual.md) is complete: upload, local Studio, manual transcripts/translations, artist-provided recordings, explicit approval and approved viewer playback. It works without OpenAI credit. [AI transcript first drafts](docs/ai-transcript.md), [AI translation drafts](docs/ai-translation-drafts.md) and [AI voices](docs/ai-voice.md) are now available behind opt-in flags; later levels remain pending. The task-item API below remains the original architecture example.
+The [manual first-phase demo](docs/phase-1-manual.md) is complete: upload, local Studio, manual transcripts/translations, artist-provided recordings, explicit approval and approved viewer playback. It works without OpenAI credit. [AI transcript first drafts](docs/ai-transcript.md), [AI translation drafts](docs/ai-translation-drafts.md) and [AI voices](docs/ai-voice.md) are on by default as [Level 1](docs/level-1.md), each gated by artist approval; later levels remain pending. The task-item API below remains the original architecture example.
 
 From this repository's root in PowerShell, run `./scripts/Start-Mazwi.ps1`, then open `http://127.0.0.1:3000`. Stop with `./scripts/Stop-Mazwi.ps1`. See the manual-demo guide for setup, verification, boundaries and the `phase-1-manual` tag.
 

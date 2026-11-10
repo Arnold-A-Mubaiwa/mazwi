@@ -1,6 +1,6 @@
 ﻿# Mazwi language feasibility
 
-This page documents the development evaluation tool and its language-quality limits. The app now has opt-in AI transcript first drafts (docs/ai-transcript.md), translation drafts (docs/ai-translation-drafts.md) and voices (docs/ai-voice.md).
+This page documents the development evaluation tool and its language-quality limits. The app now has AI transcript first drafts (docs/ai-transcript.md), translation drafts (docs/ai-translation-drafts.md) and voices (docs/ai-voice.md), on by default since Level 1 (docs/level-1.md).
 Primary languages: Shona (`sn`) and isiXhosa (`xh`); Swahili (`sw`) and English (`en`) are also accepted.
 
 ## Evidence and limits
