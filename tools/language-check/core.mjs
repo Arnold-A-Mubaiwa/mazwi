@@ -1,10 +1,12 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { extname, resolve } from 'node:path';
+import { dirname, extname, resolve } from 'node:path';
+import { assertRunnable, validateArtifact, evaluate } from './workflow.mjs';
 
+export { evaluate };
 export const languageNames = { sn: 'Shona', xh: 'isiXhosa', sw: 'Swahili', en: 'English' };
-export const defaultModels = {
-  transcription: 'gpt-transcribe', translation: 'gpt-6-luna', speech: 'gpt-realtime-2.1-mini',
-};
+export const defaultModels = { transcription: 'gpt-transcribe', translation: 'gpt-6-luna', speech: 'gpt-realtime-2.1-mini' };
+export const stages = ['transcribe', 'review-transcript', 'translate', 'review-translation', 'voice', 'review-voice'];
+const networkStages = ['transcribe', 'translate', 'voice'];
 
 export function loadEnvironment(environment = process.env, root = process.cwd()) {
   const result = { ...environment };
@@ -14,7 +16,7 @@ export function loadEnvironment(environment = process.env, root = process.cwd())
     for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
       if (!line.trim() || line.trimStart().startsWith('#')) continue;
       const entry = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
-      if (!entry) throw new Error(`Invalid ${file} entry; use NAME=value.`);
+      if (!entry) throw new Error('Invalid local environment syntax; use NAME=value.');
       let value = entry[2].trim();
       if (value.length >= 2 && ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'")))) value = value.slice(1, -1);
       if (!(entry[1] in environment)) result[entry[1]] = value;
@@ -23,120 +25,100 @@ export function loadEnvironment(environment = process.env, root = process.cwd())
   return result;
 }
 
-export function parseArguments(args, environment) {
+export function parseArguments(args, environment = {}) {
   const options = {
-    live: false, consent: false, english: false, help: false, clips: {},
-    models: {
-      transcription: environment.MAZWI_TRANSCRIPTION_MODEL || defaultModels.transcription,
+    stage: 'transcribe', live: false, apply: false, consent: false, help: false, clips: {},
+    models: { transcription: environment.MAZWI_TRANSCRIPTION_MODEL || defaultModels.transcription,
       translation: environment.MAZWI_TRANSLATION_MODEL || defaultModels.translation,
-      speech: environment.MAZWI_SPEECH_MODEL || defaultModels.speech,
-    },
+      speech: environment.MAZWI_SPEECH_MODEL || defaultModels.speech },
   };
-  for (let index = 0; index < args.length; index += 1) {
+  const values = new Set(['stage', 'input', 'text', 'meaning', 'terms', 'source', 'target', 'language', 'reviewer', 'decision', 'pronunciation', 'naturalness']);
+  const paths = new Set(['input', 'text', 'meaning', 'terms']);
+  const seen = new Set();
+  for (let index = 0; index < args.length; index++) {
     const argument = args[index];
-    if (['--live', '--consent', '--english', '--help'].includes(argument)) {
-      options[argument.slice(2)] = true;
-    } else if (['--sn', '--xh', '--sw'].includes(argument)) {
+    if (!argument.startsWith('--') || seen.has(argument)) throw new Error('Unknown or duplicate option. Use --help.');
+    seen.add(argument);
+    const key = argument.slice(2);
+    if (['live', 'apply', 'consent', 'help'].includes(key)) options[key] = true;
+    else if (values.has(key) || Object.hasOwn(languageNames, key)) {
       const value = args[++index];
-      if (!value || value.startsWith('--') || options.clips[argument.slice(2)]) throw new Error('Provide each clip path once, after --sn, --xh, or --sw.');
-      options.clips[argument.slice(2)] = resolve(value);
-    } else {
-      throw new Error('Unknown option. Use --help.');
-    }
+      if (!value || value.startsWith('--')) throw new Error('An option value is missing.');
+      if (Object.hasOwn(languageNames, key)) options.clips[key] = resolve(value);
+      else options[key] = paths.has(key) ? resolve(value) : value;
+    } else throw new Error('Unknown option. Use --help. The former --english pipeline is no longer available.');
   }
+  if (!stages.includes(options.stage)) throw new Error('Choose a documented evaluation stage.');
   return options;
 }
 
 export function preflight(options, environment, inspect = statSync) {
   const blockers = [];
-  if (!environment.OPENAI_API_KEY?.trim()) blockers.push('Configure OPENAI_API_KEY locally; never paste it into chat or tracked files.');
-  if (!options.consent) blockers.push('Confirm permission to process both recordings using --consent.');
+  const network = networkStages.includes(options.stage);
+  if (network && !environment.OPENAI_API_KEY?.trim()) blockers.push('Configure OPENAI_API_KEY locally; never paste it into chat or tracked files.');
+  if (network && !options.consent) blockers.push('Confirm permission to send this stage’s recordings/text using --consent.');
+  if (network && options.apply) blockers.push('--apply is only for offline human review.');
+  if (!network && options.live) blockers.push('Human review is offline; use --apply instead of --live.');
+  if (options.target && options.stage !== 'translate') blockers.push('--target belongs only to the translate stage.');
+  if ((options.pronunciation || options.naturalness) && options.stage !== 'review-voice') blockers.push('Voice scores belong only to review-voice.');
+  if (network && (options.reviewer || options.decision || options.language)) blockers.push('Human review options cannot be used in a network stage.');
+  if (options.input && options.source) blockers.push('--source is only for importing a reference without --input.');
   const sources = Object.keys(options.clips);
-  if (sources.length !== 2) blockers.push('Provide exactly two different source languages: --sn and --xh are the primary pair; --sw is optional instead of either.');
-  for (const language of sources) {
-    const path = options.clips[language];
-    if (!path) { blockers.push(`Provide the ${languageNames[language]} clip with --${language}.`); continue; }
-    if (!['.mp3', '.mp4', '.mpeg', '.mpga', '.m4a', '.wav', '.webm'].includes(extname(path).toLowerCase())) {
-      blockers.push(`${languageNames[language]} clip: unsupported file extension.`); continue;
-    }
+  const checkFile = (path, maximum, label) => {
     try {
       const details = inspect(path);
-      if (!details.isFile() || details.size <= 0 || details.size > 25_000_000) blockers.push(`${languageNames[language]} clip must be a non-empty file no larger than 25 MB.`);
-    } catch {
-      blockers.push(`${languageNames[language]} clip is missing or unreadable.`);
+      if (!details.isFile() || details.size <= 0 || details.size > maximum) blockers.push(`${label} is empty, oversized, or not a regular file.`);
+    } catch { blockers.push(`${label} is missing or unreadable.`); }
+  };
+  if (options.stage === 'transcribe') {
+    if (sources.length < 1 || sources.length > 2) blockers.push('Provide one or two different recordings with --sn, --xh, --sw or --en.');
+    for (const source of sources) {
+      if (!['.mp3', '.mp4', '.mpeg', '.mpga', '.m4a', '.wav', '.webm'].includes(extname(options.clips[source]).toLowerCase())) blockers.push('Unsupported recording extension.');
+      else checkFile(options.clips[source], 25_000_000, 'Recording');
     }
+    if (new Set(Object.values(options.clips)).size !== sources.length) blockers.push('Use a separate recording for each source language.');
+    if (options.input || options.text || options.meaning || options.terms || options.source || options.target) blockers.push('Transcription accepts recordings, not text artifacts.');
+  } else {
+    if (sources.length) blockers.push('Recordings are only accepted by the transcribe stage.');
+    if (!options.input && !(options.stage === 'review-transcript' && options.text && options.source)) blockers.push('Provide --input, or import a corrected transcript with --source and --text.');
+    if (options.input) checkFile(options.input, 200_000, 'Input artifact');
+    for (const key of ['text', 'meaning', 'terms']) if (options[key]) checkFile(options[key], 40_000, 'Review reference file');
+    if (options.stage === 'translate' && !Object.hasOwn(languageNames, options.target)) blockers.push('Choose the target language with --target sn|xh|sw|en.');
+    if (!network) {
+      if (!['approve', 'reject'].includes(options.decision) || !options.reviewer?.trim()) blockers.push('Human review requires --decision approve|reject and --reviewer.');
+      if (!Object.hasOwn(languageNames, options.language)) blockers.push('Confirm the reviewed language with --language sn|xh|sw|en.');
+    } else if (options.text || options.meaning || options.terms || options.source || options.decision || options.reviewer || options.language) blockers.push('Network stages consume reviewed artifacts; corrections belong in an offline review stage.');
+    if (options.stage !== 'review-transcript' && (options.meaning || options.terms || options.source)) blockers.push('Source references belong in review-transcript.');
   }
-  if (sources.length === 2 && options.clips[sources[0]] === options.clips[sources[1]]) blockers.push('Use separate recordings for the two source languages.');
   return {
-    mode: options.live ? 'LIVE' : 'PREFLIGHT', status: blockers.length ? 'BLOCKED' : 'READY',
-    models: options.models, blockers,
-    languages: sources,
-    plannedCalls: { transcriptions: 2, translations: options.english ? 4 : 2, speechGenerations: options.english ? 6 : 4 },
-    qualityVerdict: 'NOT_REVIEWED',
-    notes: ['Preflight makes no network calls and writes no output files.', 'Model access and actual language quality are not verified by preflight.'],
+    stage: options.stage, mode: options.live ? 'LIVE' : options.apply ? 'LOCAL_REVIEW' : 'PREFLIGHT',
+    status: blockers.length ? 'BLOCKED' : 'READY', blockers, models: options.models,
+    plannedCalls: { transcriptions: options.stage === 'transcribe' ? sources.length : 0,
+      translations: options.stage === 'translate' ? 1 : 0, speechGenerations: options.stage === 'voice' ? 1 : 0 },
+    qualityVerdict: 'NOT_REVIEWED', demoReady: false,
+    notes: ['Each invocation runs one stage only. API completion is not language-quality approval.', 'Without --live or --apply this is read-only preflight. Private content is never printed.'],
   };
 }
 
-export function failureCode(error) {
-  if (error?.status === 401 || error?.status === 403) return 'ACCESS_DENIED';
-  if (error?.status === 429) return 'RATE_LIMIT_OR_QUOTA';
-  if (error?.status === 400 || error?.status === 404) return 'MODEL_OR_INPUT_REJECTED';
-  if (error?.name === 'AbortError' || error?.name === 'TimeoutError') return 'TIMEOUT';
-  return 'REQUEST_OR_OUTPUT_FAILED';
-}
-
-function requireText(text) {
-  if (typeof text !== 'string' || !text.trim() || text.length > 6000) throw new Error('Invalid text output.');
-  return text.trim();
-}
-
-export async function evaluate(options, services, output) {
-  const report = { processingStatus: 'PASS', qualityVerdict: 'NOT_REVIEWED', models: options.models, clips: [] };
-  const sources = Object.keys(options.clips);
-  for (const source of sources) {
-    const clip = { source, stages: [], review: { transcription: null, reviewer: null }, versions: [] };
-    report.clips.push(clip);
-    let transcript;
-    try {
-      transcript = requireText(await services.transcribe(options.clips[source], source));
-      await output(`${source}/transcript.txt`, transcript);
-      clip.stages.push({ stage: 'transcription', status: 'PASS' });
-    } catch (error) {
-      clip.stages.push({ stage: 'transcription', status: 'FAIL', code: failureCode(error) });
-      report.processingStatus = 'FAIL';
-      continue;
+export function prepare(options, environment, inspect = statSync, read = readFileSync) {
+  const readiness = preflight(options, environment, inspect);
+  const inputs = {};
+  if (readiness.status === 'BLOCKED') return { readiness, inputs };
+  try {
+    if (options.input) inputs.artifact = validateArtifact(JSON.parse(read(options.input, 'utf8').replace(/^\uFEFF/, '')));
+    if (options.text) inputs.text = read(options.text, 'utf8').replace(/^\uFEFF/, '');
+    if (options.meaning) inputs.meaning = read(options.meaning, 'utf8').replace(/^\uFEFF/, '');
+    if (options.terms) inputs.terms = JSON.parse(read(options.terms, 'utf8').replace(/^\uFEFF/, ''));
+    if (options.stage === 'review-voice') {
+      const audio = resolve(dirname(options.input), 'speech.wav');
+      const details = inspect(audio);
+      if (!details.isFile() || details.size < 45 || details.size > 48_000 * 120 + 44) throw new Error('Voice audio is missing or oversized.');
+      inputs.audio = read(audio);
     }
-    const targets = [source, ...sources.filter((language) => language !== source), ...(options.english ? ['en'] : [])];
-    for (const target of targets) {
-      const version = { target, status: 'PASS', review: { meaning: null, namesAndProverbs: null, voicePronunciation: null, voiceNaturalness: null }, notes: [] };
-      clip.versions.push(version);
-      let text = transcript;
-      if (target !== source) {
-        try {
-          const translated = await services.translate(transcript, source, target);
-          text = requireText(translated.translation);
-          if (!Array.isArray(translated.notes) || translated.notes.some((note) => typeof note !== 'string')) throw new Error('Invalid translation notes.');
-          version.notes = translated.notes;
-          clip.stages.push({ stage: 'translation', target, status: 'PASS' });
-        } catch (error) {
-          clip.stages.push({ stage: 'translation', target, status: 'FAIL', code: failureCode(error) });
-          version.status = report.processingStatus = 'FAIL';
-          continue;
-        }
-      }
-      try {
-        await output(`${source}/${target}/text.txt`, text);
-        const speech = await services.speak(text, target);
-        if (!Buffer.isBuffer(speech.wav) || speech.wav.length <= 44) throw new Error('Empty speech audio.');
-        await output(`${source}/${target}/speech.wav`, speech.wav);
-        await output(`${source}/${target}/spoken-transcript.txt`, requireText(speech.transcript));
-        version.audio = `${source}/${target}/speech.wav`;
-        clip.stages.push({ stage: 'speech', target, status: 'PASS' });
-      } catch (error) {
-        clip.stages.push({ stage: 'speech', target, status: 'FAIL', code: failureCode(error) });
-        version.status = report.processingStatus = 'FAIL';
-      }
-    }
+    assertRunnable(options, inputs);
+  } catch (error) {
+    readiness.status = 'BLOCKED';
+    readiness.blockers.push(error?.safeMessage || 'Input artifact or human review is invalid, unreviewed, rejected, changed, or unreadable.');
   }
-  return report;
+  return { readiness, inputs };
 }
