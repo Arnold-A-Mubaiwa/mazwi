@@ -18,7 +18,7 @@ The metadata lookup is also unauthenticated and is for local development only.
 
 ## Database and configuration
 
-Set `ConnectionStrings__Mazwi` privately for a separate development database. Keep `MAZWI_TEST_CONNECTION_STRING` pointed at a dedicated database ending in `_tests`.
+Set `ConnectionStrings__Mazwi` privately. The owner currently permits the local app to share the `_tests` database: both it and `MAZWI_TEST_CONNECTION_STRING` point to the same database in ignored `.env`. Uploaded demo stories and test records therefore coexist. Split development and test databases later.
 Use `.env` with `scripts/Set-LocalEnvironment.ps1`, ignored appsettings.Development.json, or user-secrets; never commit connection strings.
 Migration `002_create_stories.sql` is embedded in Repository and runs through the existing explicit DbUp migration command, not normal API startup.
 Recordings are not stored in `web/public/`. `MediaStorage__Root` can override the private filesystem location; never point it at a public/static folder.
@@ -31,7 +31,7 @@ dotnet build
 dotnet run --project src/Mazwi.WebApi --no-launch-profile --no-build -- --migrate
 ```
 
-The explicit migration command was verified against the dedicated test database. For normal use it targets your configured development connection; never substitute the test connection into your saved development settings.
+The explicit migration command was verified against the configured local database. It uses `ConnectionStrings__Mazwi`, which currently points to the shared test database under the owner's temporary exception.
 Then start the API and website using docs/frontend-setup.md (load the local environment in the API terminal first), and open `http://127.0.0.1:3000/upload`.
 
 ## Failure behavior
@@ -46,7 +46,7 @@ An uncertain network result may have saved a story; do not repeatedly submit bli
 
 The standard quality helper runs the .NET build, format, all four test projects and architecture checks.
 Frontend checks are documented in docs/frontend-setup.md.
-Browser tests use the test connection and `.local/browser-media/`, not the development database or real artist recordings.
+Browser tests use the explicit test connection and `.local/browser-media/`, not real artist recordings or the app's `.local/media/` files. Their metadata shares the current database under the temporary exception above.
 They verify a real browser-to-API-to-PostgreSQL upload, private file contents, a file larger than 10 MB, permission validation, failure recovery and mobile layout.
 Run .NET tests first to apply the migration to the dedicated test database, then run the frontend production build and browser suite.
 

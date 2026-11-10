@@ -26,7 +26,7 @@ SDK 10.0.402 is pinned in global.json. Quality tooling also uses Node.js.
 
 Build must have zero warnings; format and all four test projects must pass before a PR is ready.
 Repository/full-stack API tests currently require MAZWI_TEST_CONNECTION_STRING for a dedicated local database ending in _tests; never mock the database in Repository.Tests.
-Local PostgreSQL is the current user-approved default for everything. Testcontainers.PostgreSql and Docker Compose are retained for future container use; Docker is not required now.
+Local PostgreSQL is the current user-approved default. The owner temporarily approved sharing the dedicated _tests database with the local app; separate development storage later. Testcontainers/Docker remain optional future work.
 Secrets belong in ignored .env/appsettings.Development.json or user-secrets, never tracked files.
 The quality helper loads .env and uses repository-local .local caches. Missing credentials are failures, not skipped/passing tests.
 
