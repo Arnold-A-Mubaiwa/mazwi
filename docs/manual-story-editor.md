@@ -8,7 +8,7 @@ It uses the .NET API and PostgreSQL without sending anything to OpenAI.
 1. Start the local API and website using docs/frontend-setup.md. The API terminal must load the ignored `.env` first.
 2. Upload a permitted recording at `/upload`.
 3. On the unpublished confirmation, choose **Write transcript and translations**.
-4. Listen to the original in your own audio/video player, type its words, and choose **Save original transcript**.
+4. Listen to the original on the editing page, type its words, and choose **Save original transcript**.
 5. Choose another supported language, type or paste your own permitted translation, and choose **Save translation draft**.
 6. Bookmark the editing URL. Reopening it loads saved text and translations from PostgreSQL.
 
@@ -16,12 +16,12 @@ Supported languages are Shona, isiXhosa, Kiswahili and English. The original lan
 Each text must contain 1–20,000 characters after trimming its outer whitespace. Internal line breaks, tabs, names and punctuation are preserved; other control characters are rejected.
 An original transcript must be saved before translations. Save changes to the original before editing translations.
 Changing the original preserves existing translation drafts; the artist must check them again for meaning.
-There is no automatic translation, voice generation, approval, media playback, publication or account system in this feature.
+Automatic translation, generated voices and accounts remain pending. Issue #15 adds explicit artist approval and local recording playback; see docs/artist-approval.md.
 
 ## Save behavior
 
 Each save changes only the selected transcript or translation, preserving other languages.
-Translations are always drafts; the story is always unpublished. Supplying an approval status in a request cannot approve it.
+Saved or changed translations are drafts until explicit artist approval. Supplying an approval status in a text-save request cannot approve it. Original approval makes a story eligible for viewer publication; source changes revoke it.
 Failed saves keep typed text in the editor for retry. A browser warning helps avoid accidentally closing a page with unsaved changes; also keep a copy before navigating away.
 Text is not autosaved, and unsaved text is not backed up in localStorage. Each editing session must explicitly save.
 Concurrent editing is last-write-wins per field; collaboration and conflict detection are future work.

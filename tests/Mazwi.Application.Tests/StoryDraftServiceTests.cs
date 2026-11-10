@@ -27,7 +27,7 @@ public sealed class StoryDraftServiceTests
         Assert.NotNull(result);
         Assert.Equal("Words\nMore words", result.Transcript);
         Assert.Equal("unpublished", result.Status);
-        await _repository.Received(1).GetAsync(_story.Id, cancellation.Token);
+        await _repository.Received(2).GetAsync(_story.Id, cancellation.Token);
         await _repository.Received(1).SaveTranscriptAsync(_story, cancellation.Token);
     }
 

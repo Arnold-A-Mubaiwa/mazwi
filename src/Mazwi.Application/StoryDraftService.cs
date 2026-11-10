@@ -20,7 +20,7 @@ public sealed class StoryDraftService(IStoryRepository repository) : IStoryDraft
 
         story.SetTranscript(text);
         await repository.SaveTranscriptAsync(story, cancellationToken);
-        return StoryDraftDto.From(story);
+        return await GetAsync(id, cancellationToken);
     }
 
     public async Task<StoryDraftDto?> SaveTranslationAsync(Guid id, string language, string text, CancellationToken cancellationToken)
@@ -33,6 +33,6 @@ public sealed class StoryDraftService(IStoryRepository repository) : IStoryDraft
 
         TranslationDraft draft = story.SetTranslation(language, text);
         await repository.SaveTranslationAsync(id, draft, cancellationToken);
-        return StoryDraftDto.From(story);
+        return await GetAsync(id, cancellationToken);
     }
 }

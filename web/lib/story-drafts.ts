@@ -1,9 +1,10 @@
 import { LANGUAGES, type LanguageCode } from "./languages.ts";
 
 export const MAX_STORY_TEXT = 20_000;
-export type TranslationDraft = { language: LanguageCode; text: string; status: "draft" };
+export type TranslationDraft = { language: LanguageCode; text: string; status: "draft" | "approved"; recordingId?: string | null; recordingExtension?: string | null };
 export type StoryDraft = {
-  id: string; title: string; artistName: string; language: LanguageCode; status: "unpublished";
+  id: string; title: string; artistName: string; language: LanguageCode; status: "unpublished" | "published";
+  reviewVersion: string; originalApproved: boolean; recordingExtension: string;
   transcript: string | null; translations: TranslationDraft[];
 };
 
@@ -21,12 +22,14 @@ function isLanguage(value: unknown): value is LanguageCode {
 function isTranslation(value: unknown): value is TranslationDraft {
   if (!value || typeof value !== "object") return false;
   const draft = value as Record<string, unknown>;
-  return isLanguage(draft.language) && typeof draft.text === "string" && draft.status === "draft";
+  return isLanguage(draft.language) && typeof draft.text === "string" && ["draft", "approved"].includes(String(draft.status));
 }
 
-async function readDraft(response: Response, id: string): Promise<StoryDraft> {
+export async function readDraft(response: Response, id: string): Promise<StoryDraft> {
   if (!response.ok) {
     if (response.status === 404) throw new Error("This story could not be found. Check the editing link or upload a story first.");
+    if (response.status === 409) throw new Error("This story changed. Reload the page and review the saved content before approving or uploading again. Your typed text is still here.");
+    if (response.status === 413) throw new Error("The recording must be 25 MB or smaller.");
     if (response.status === 400) {
       const problem = await response.json().catch(() => null);
       throw new Error(typeof problem?.detail === "string" ? problem.detail.slice(0, 300) : "Check the text and translation language, then try again.");
@@ -36,11 +39,23 @@ async function readDraft(response: Response, id: string): Promise<StoryDraft> {
   const draft = await response.json();
   if (!draft || typeof draft.id !== "string" || draft.id.toLowerCase() !== id.toLowerCase()
     || typeof draft.title !== "string" || typeof draft.artistName !== "string" || !isLanguage(draft.language)
-    || draft.status !== "unpublished" || (draft.transcript !== null && typeof draft.transcript !== "string")
+    || !["unpublished", "published"].includes(draft.status) || typeof draft.reviewVersion !== "string"
+    || typeof draft.originalApproved !== "boolean" || typeof draft.recordingExtension !== "string"
+    || (draft.transcript !== null && typeof draft.transcript !== "string")
     || !Array.isArray(draft.translations) || !draft.translations.every(isTranslation)) {
     throw new Error("The API returned an unexpected story. Your edits have not been confirmed saved.");
   }
   return draft;
+}
+
+export async function approveStory(id: string, language: LanguageCode, reviewVersion: string, signal?: AbortSignal): Promise<StoryDraft> {
+  return readDraft(await fetch(`/api/stories/${encodeURIComponent(id)}/approvals/${language}`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reviewVersion }), signal,
+  }), id);
+}
+
+export async function uploadTranslationRecording(id: string, language: LanguageCode, form: FormData, signal?: AbortSignal): Promise<StoryDraft> {
+  return readDraft(await fetch(`/api/stories/${encodeURIComponent(id)}/recordings/${language}`, { method: "POST", body: form, signal }), id);
 }
 
 export async function getStoryDraft(id: string, signal?: AbortSignal): Promise<StoryDraft> {

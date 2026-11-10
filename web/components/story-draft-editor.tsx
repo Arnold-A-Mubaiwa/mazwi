@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { LANGUAGES, type LanguageCode } from "@/lib/languages";
-import { getStoryDraft, saveStoryText, MAX_STORY_TEXT, type StoryDraft } from "@/lib/story-drafts";
+import { getStoryDraft, saveStoryText, approveStory, uploadTranslationRecording, MAX_STORY_TEXT, type StoryDraft } from "@/lib/story-drafts";
+import { recordingError } from "@/lib/stories";
+import { RecordingPlayer } from "./recording-player";
 
 export function StoryDraftEditor({ id }: { id: string }) {
   const [draft, setDraft] = useState<StoryDraft | null>(null);
@@ -58,6 +60,34 @@ export function StoryDraftEditor({ id }: { id: string }) {
     } finally { setBusy(false); }
   }
 
+  async function approve(language: LanguageCode) {
+    if (!draft) return;
+    setBusy(true); setSaveError(null); setMessage("");
+    saving.current = new AbortController();
+    try {
+      setDraft(await approveStory(id, language, draft.reviewVersion, saving.current.signal));
+      setMessage(`${LANGUAGES.find(item => item.code === language)?.name} version approved. Editing its content will require approval again.`);
+    } catch (failure) { setSaveError(failure instanceof Error ? failure.message : "Approval failed. Please try again."); }
+    finally { setBusy(false); }
+  }
+
+  async function uploadRecording(event: React.SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!draft) return;
+    const form = new FormData(event.currentTarget);
+    const file = form.get("recording");
+    const invalid = recordingError(file instanceof File ? file : null);
+    if (invalid) { setSaveError(invalid); return; }
+    form.set("reviewVersion", draft.reviewVersion);
+    setBusy(true); setSaveError(null); setMessage("");
+    saving.current = new AbortController();
+    try {
+      setDraft(await uploadTranslationRecording(id, target, form, saving.current.signal));
+      setMessage("Translated recording saved as a draft. Listen to it, then approve this language again.");
+    } catch (failure) { setSaveError(failure instanceof Error ? failure.message : "Recording upload failed."); }
+    finally { setBusy(false); }
+  }
+
   if (!draft) return <section className="draft-loading" aria-live="polite">
     {loadError ? <><p role="alert">{loadError}</p><button className="retry-button" onClick={() => { setLoadError(null); setAttempt(value => value + 1); }}>Try loading again</button><p><Link className="text-link" href="/upload">Upload a story</Link></p></> : <p role="status">Loading your saved story…</p>}
   </section>;
@@ -68,12 +98,13 @@ export function StoryDraftEditor({ id }: { id: string }) {
   const targetSaved = draft.translations.find(item => item.language === target);
 
   return <>
-    <div className="draft-story-heading"><div><h2>{draft.title}</h2><p>By {draft.artistName} · Original language: {originalLanguage}</p></div><span className="draft-badge">Unpublished</span></div>
+    <div className="draft-story-heading"><div><h2>{draft.title}</h2><p>By {draft.artistName} · Original language: {originalLanguage}</p></div><span className="draft-badge">{draft.originalApproved ? "Original approved" : "Unpublished"}</span></div>
     <p className="draft-return-note">Bookmark this editing link to come back to your saved work. Keep a copy of any unsaved text before leaving the page.</p>
     <div className="draft-grid">
       <section className="draft-card" aria-labelledby="original-heading">
         <p className="eyebrow">01 / THE ORIGINAL WORDS</p><h2 id="original-heading">Start in {originalLanguage}.</h2>
-        <p>Listen to your recording in your own player, then type the words here. Keep names, proverbs and line breaks.</p>
+        <p>Listen to the original and check the words. Keep names, proverbs and line breaks.</p>
+        <RecordingPlayer key={`original-${draft.reviewVersion}`} extension={draft.recordingExtension} label={`Original ${originalLanguage} recording`} src={`/api/stories/${id}/recordings/${draft.language}?v=${draft.reviewVersion}`} />
         <form onSubmit={event => { event.preventDefault(); void save("transcript"); }}>
           <fieldset disabled={busy}><legend className="sr-only">Original transcript</legend>
             <label htmlFor="original-transcript">Original transcript</label>
@@ -82,6 +113,7 @@ export function StoryDraftEditor({ id }: { id: string }) {
             <button className="retry-button" type="submit">Save original transcript</button>
           </fieldset>
         </form>
+        <button className="retry-button secondary-button" disabled={busy || unsaved || !draft.transcript || draft.originalApproved} onClick={() => void approve(draft.language)}>{draft.originalApproved ? "Original is approved" : "Approve original"}</button>
       </section>
       <section className="draft-card" aria-labelledby="translation-heading">
         <p className="eyebrow">02 / ANOTHER LANGUAGE</p><h2 id="translation-heading">Carry the meaning.</h2>
@@ -99,11 +131,22 @@ export function StoryDraftEditor({ id }: { id: string }) {
             <button className="retry-button" type="submit">Save translation draft</button>
           </fieldset>
         </form>
+        {targetSaved && <div className="translated-recording">
+          <p className="draft-notice">{targetSaved.status === "approved" ? "This language is approved." : "This language is a draft."} Without a translated recording, viewers will hear clearly labelled original audio with approved translated text.</p>
+          {targetSaved.recordingId && <RecordingPlayer key={targetSaved.recordingId} extension={targetSaved.recordingExtension ?? ".mp4"} label="Artist-provided translated recording" src={`/api/stories/${id}/recordings/${target}?v=${draft.reviewVersion}`} />}
+          <form onSubmit={uploadRecording}><fieldset disabled={busy || unsaved}>
+            <legend>Optional translated recording</legend>
+            <label htmlFor="translated-recording">Translated recording</label><input id="translated-recording" type="file" name="recording" accept=".mp3,.wav,.m4a,.mp4,.webm" required />
+            <label className="permission-field"><input type="checkbox" name="permission" value="true" required /> I own this translated recording or have permission to upload and share it.</label>
+            <button className="retry-button" type="submit">Save translated recording</button>
+          </fieldset></form>
+          <button className="retry-button secondary-button" disabled={busy || unsaved || !draft.originalApproved || targetSaved.status === "approved"} onClick={() => void approve(target)}>{targetSaved.status === "approved" ? "Translation is approved" : "Approve translation"}</button>
+        </div>}
       </section>
     </div>
     {busy && <p className="draft-feedback" role="status">Saving your words…</p>}
     {message && <p className="draft-feedback" role="status">{message}</p>}
     {saveError && <p className="upload-error" role="alert">{saveError}</p>}
-    <p className="draft-privacy-note">Manual drafts only. No AI processing, voice generation, approval or publication has run. This local demo has no accounts; keep it on your own computer.</p>
+    <p className="draft-privacy-note">Nothing is approved automatically. Save and review every change before approval. No AI processing or voice generation has run. This local demo has no accounts; keep it on your own computer.</p>
   </>;
 }

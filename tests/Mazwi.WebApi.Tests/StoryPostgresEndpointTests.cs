@@ -31,6 +31,7 @@ public sealed class StoryPostgresEndpointTests
                 new Dictionary<string, string?> { ["ConnectionStrings:Mazwi"] = connectionString, ["MediaStorage:Root"] = root }));
         });
         using HttpClient client = factory.CreateClient();
+        Guid? createdId = null;
         try
         {
             using var form = StoriesEndpointTests.Form();
@@ -39,6 +40,7 @@ public sealed class StoryPostgresEndpointTests
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
             StoryResponse? story = await response.Content.ReadFromJsonAsync<StoryResponse>();
             Assert.NotNull(story);
+            createdId = story.Id;
             StoryResponse? loaded = await client.GetFromJsonAsync<StoryResponse>($"/api/stories/{story.Id}");
             // Assert
             Assert.NotNull(loaded);
@@ -58,9 +60,33 @@ public sealed class StoryPostgresEndpointTests
             Assert.Equal("Tsuro's words\nSecond line", reopened.Transcript);
             Assert.Equal("unpublished", reopened.Status);
             Assert.Equal(new TranslationDraftResponse("xh", "Manual translation\nSecond line", "draft"), Assert.Single(reopened.Translations));
+            using var ranged = new HttpRequestMessage(HttpMethod.Get, $"/api/stories/{story.Id}/recordings/sn");
+            ranged.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(0, 3);
+            HttpResponseMessage media = await client.SendAsync(ranged);
+            Assert.Equal(HttpStatusCode.PartialContent, media.StatusCode);
+            Assert.Equal("RIFF"u8.ToArray(), await media.Content.ReadAsByteArrayAsync());
+            Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync($"/api/stories/{story.Id}/approvals/sn", new ApproveStoryRequest(Guid.NewGuid()))).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/stories/{story.Id}/approvals/sn", new ApproveStoryRequest(reopened.ReviewVersion))).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/stories/{story.Id}/approvals/xh", new ApproveStoryRequest(reopened.ReviewVersion))).StatusCode);
+            using var translatedForm = new MultipartFormDataContent();
+            translatedForm.Add(new StringContent(reopened.ReviewVersion.ToString()), "reviewVersion");
+            translatedForm.Add(new StringContent("true"), "permission");
+            translatedForm.Add(new ByteArrayContent("RIFF0000WAVEdata0000"u8.ToArray()), "recording", "translated.wav");
+            Assert.Equal(HttpStatusCode.OK, (await client.PostAsync($"/api/stories/{story.Id}/recordings/xh", translatedForm)).StatusCode);
+            StoryDraftResponse attached = (await client.GetFromJsonAsync<StoryDraftResponse>(draftRoute))!;
+            Assert.NotNull(Assert.Single(attached.Translations).RecordingId);
+            Assert.Equal("draft", Assert.Single(attached.Translations).Status);
+            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/api/stories/{story.Id}/recordings/xh")).StatusCode);
+            await client.PutAsJsonAsync(draftRoute + "/transcript", new { Text = "Changed original" });
+            Assert.False((await client.GetFromJsonAsync<StoryDraftResponse>(draftRoute))!.OriginalApproved);
         }
         finally
         {
+            if (createdId is Guid fixtureId)
+            {
+                await using NpgsqlDataSource dataSource = NpgsqlDataSource.Create(connectionString);
+                await new StoryRepository(dataSource).DeleteAsync(fixtureId, CancellationToken.None);
+            }
             if (Directory.Exists(root))
             {
                 foreach (string file in Directory.GetFiles(root))

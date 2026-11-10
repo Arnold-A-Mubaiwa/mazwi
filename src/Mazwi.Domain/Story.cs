@@ -7,7 +7,9 @@ public sealed class Story
     public StoryDetails Details { get; }
     public StoryRecording Recording { get; }
     public DateTimeOffset PermissionRecordedAt { get; }
-    public string Status => "unpublished";
+    public string Status => OriginalApproved ? "published" : "unpublished";
+    public Guid ReviewVersion { get; private set; } = Guid.NewGuid();
+    public bool OriginalApproved { get; private set; }
     public StoryText? Transcript { get; private set; }
     public IReadOnlyCollection<TranslationDraft> Translations => _translations.Values.ToArray();
 
@@ -36,7 +38,23 @@ public sealed class Story
         return new Story(Guid.NewGuid(), details, recording, DateTimeOffset.UtcNow);
     }
 
-    public void SetTranscript(string text) => Transcript = new StoryText(text);
+    public void SetTranscript(string text)
+    {
+        var value = new StoryText(text);
+        if (value == Transcript)
+        {
+            return;
+        }
+
+        Transcript = value;
+        OriginalApproved = false;
+        foreach (TranslationDraft draft in Translations)
+        {
+            _translations[draft.Language] = new TranslationDraft(draft.Language, draft.Text.Value, draft.Recording);
+        }
+
+        ReviewVersion = Guid.NewGuid();
+    }
 
     public TranslationDraft SetTranslation(string language, string text)
     {
@@ -51,12 +69,73 @@ public sealed class Story
             throw new DomainException("Choose a translation language different from the original.");
         }
 
+        _translations.TryGetValue(draft.Language, out TranslationDraft? previous);
+        if (previous?.Text == draft.Text)
+        {
+            return previous;
+        }
+
+        draft = new TranslationDraft(draft.Language, draft.Text.Value, previous?.Recording);
         _translations[draft.Language] = draft;
+        ReviewVersion = Guid.NewGuid();
         return draft;
     }
 
+    public void AttachRecording(string language, TranslatedRecording recording, bool permission)
+    {
+        if (!permission)
+        {
+            throw new DomainException("Permission to use this translated recording is required.");
+        }
+
+        ArgumentNullException.ThrowIfNull(recording);
+        if (!_translations.TryGetValue(language, out TranslationDraft? draft))
+        {
+            throw new DomainException("Save the translation text before adding its recording.");
+        }
+
+        _translations[language] = new TranslationDraft(language, draft.Text.Value, recording);
+        ReviewVersion = Guid.NewGuid();
+    }
+
+    public void Approve(string language, Guid expectedVersion)
+    {
+        EnsureVersion(expectedVersion);
+        if (Transcript is null)
+        {
+            throw new DomainException("Save the original transcript before approval.");
+        }
+
+        if (language == Details.Language)
+        {
+            OriginalApproved = true;
+        }
+        else
+        {
+            if (!OriginalApproved)
+            {
+                throw new DomainException("Approve the original before approving translations.");
+            }
+
+            if (!_translations.TryGetValue(language, out TranslationDraft? draft))
+            {
+                throw new DomainException("Save this translation before approval.");
+            }
+
+            _translations[language] = new TranslationDraft(language, draft.Text.Value, draft.Recording, true);
+        }
+    }
+
+    public void EnsureVersion(Guid expectedVersion)
+    {
+        if (expectedVersion != ReviewVersion)
+        {
+            throw new StoryConflictException();
+        }
+    }
+
     public static Story Rehydrate(Guid id, StoryDetails details, StoryRecording recording, DateTimeOffset permissionRecordedAt,
-        string? transcript = null, IEnumerable<TranslationDraft>? translations = null)
+        string? transcript = null, IEnumerable<TranslationDraft>? translations = null, Guid? reviewVersion = null, bool originalApproved = false)
     {
         var story = new Story(id, details, recording, permissionRecordedAt);
         if (transcript is not null)
@@ -67,6 +146,24 @@ public sealed class Story
         foreach (TranslationDraft draft in translations ?? [])
         {
             story.SetTranslation(draft.Language, draft.Text.Value);
+            story._translations[draft.Language] = draft;
+        }
+
+        if (originalApproved && story.Transcript is null)
+        {
+            throw new DomainException("Approval requires a transcript.");
+        }
+
+        if (!originalApproved && story.Translations.Any(draft => draft.IsApproved))
+        {
+            throw new DomainException("Translations require an approved original.");
+        }
+
+        story.OriginalApproved = originalApproved;
+        story.ReviewVersion = reviewVersion ?? Guid.NewGuid();
+        if (story.ReviewVersion == Guid.Empty)
+        {
+            throw new DomainException("A review version is required.");
         }
 
         return story;

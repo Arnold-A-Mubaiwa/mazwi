@@ -64,7 +64,7 @@ public sealed class TaskItemsEndpointTests : IDisposable
         HttpResponseMessage response = await _client.PostAsJsonAsync("/api/task-items", new { Title = new string('a', 201) });
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Contains("Invalid task", await response.Content.ReadAsStringAsync());
+        Assert.Contains("Invalid input", await response.Content.ReadAsStringAsync());
     }
 
     [Theory]
