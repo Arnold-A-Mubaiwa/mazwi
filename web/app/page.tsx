@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LanguagePicker } from "@/components/language-picker";
+import { StoryFeed } from "@/components/story-feed";
 export default function Home() {
   return <main id="main">
     <section className="hero" aria-labelledby="hero-title">
@@ -20,11 +21,7 @@ export default function Home() {
       <div className="section-heading"><div><p className="eyebrow">PULL UP A CHAIR</p><h2 id="stories-title">A world of voices.</h2></div><span className="section-number">01 — EXPLORE</span></div>
       <div className="explore-layout">
         <aside className="preference-panel"><LanguagePicker /><div className="small-divider" /><p className="preference-caption">A poem. A folktale. A voice that feels like home.</p><p className="muted-copy">Choose your language. Approved stories will appear here as they become available.</p></aside>
-        <div className="empty-stories"><div className="empty-mark" aria-hidden="true"><span /><span /><span /><span /><span /></div>
-          <p className="eyebrow">GOOD STORIES DESERVE A MOMENT</p><h3>The first voices<br />are on their way.</h3>
-          <p>This space is waiting for its storytellers.<br />Every translation is shared with its artist’s approval.</p>
-          <div className="trust-note"><span aria-hidden="true">✳</span> Their words. Their voice. Their say.</div>
-        </div>
+        <StoryFeed />
       </div>
     </section>
     <section className="closing-note"><span className="closing-symbol" aria-hidden="true">✳</span><p>Some stories cross borders.<br /><em>Others remind us we were never that far apart.</em></p></section>

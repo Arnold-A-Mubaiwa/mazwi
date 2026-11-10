@@ -134,6 +134,32 @@ public sealed class Story
         }
     }
 
+    public ApprovedStoryVersion? SelectApprovedVersion(string language, bool originalAudio = false)
+    {
+        if (!StoryDetails.SupportsLanguage(language))
+        {
+            throw new DomainException("Choose a supported viewing language.");
+        }
+
+        if (!OriginalApproved || Transcript is null)
+        {
+            return null;
+        }
+
+        TranslationDraft? translation = Translations.SingleOrDefault(d => d.Language == language && d.IsApproved);
+        if (translation is null)
+        {
+            return new(Details.Language, Details.Language, Transcript, Id, Recording);
+        }
+
+        if (!originalAudio && translation.Recording is TranslatedRecording media)
+        {
+            return new(translation.Language, translation.Language, translation.Text, media.Id, media.File);
+        }
+
+        return new(translation.Language, Details.Language, translation.Text, Id, Recording);
+    }
+
     public static Story Rehydrate(Guid id, StoryDetails details, StoryRecording recording, DateTimeOffset permissionRecordedAt,
         string? transcript = null, IEnumerable<TranslationDraft>? translations = null, Guid? reviewVersion = null, bool originalApproved = false)
     {

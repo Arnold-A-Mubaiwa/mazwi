@@ -24,6 +24,7 @@ builder.Services.AddScoped<IStoryRepository, StoryRepository>();
 builder.Services.AddScoped<IStoryService, StoryService>();
 builder.Services.AddScoped<IStoryDraftService, StoryDraftService>();
 builder.Services.AddScoped<IStoryReviewService, StoryReviewService>();
+builder.Services.AddScoped<IStoryFeedService, StoryFeedService>();
 builder.Services.AddSingleton<IStoryMediaStore>(_ => new LocalStoryMediaStore(
     builder.Configuration["MediaStorage:Root"] ?? Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "../../.local/media"))));
 

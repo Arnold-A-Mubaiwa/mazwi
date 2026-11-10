@@ -41,6 +41,7 @@ public sealed class StoryPostgresEndpointTests
             StoryResponse? story = await response.Content.ReadFromJsonAsync<StoryResponse>();
             Assert.NotNull(story);
             createdId = story.Id;
+            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/feed/{story.Id}?language=xh")).StatusCode);
             StoryResponse? loaded = await client.GetFromJsonAsync<StoryResponse>($"/api/stories/{story.Id}");
             // Assert
             Assert.NotNull(loaded);
@@ -68,6 +69,10 @@ public sealed class StoryPostgresEndpointTests
             Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync($"/api/stories/{story.Id}/approvals/sn", new ApproveStoryRequest(Guid.NewGuid()))).StatusCode);
             Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/stories/{story.Id}/approvals/sn", new ApproveStoryRequest(reopened.ReviewVersion))).StatusCode);
             Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/stories/{story.Id}/approvals/xh", new ApproveStoryRequest(reopened.ReviewVersion))).StatusCode);
+            StoryViewResponse fallback = (await client.GetFromJsonAsync<StoryViewResponse>($"/api/feed/{story.Id}?language=xh"))!;
+            Assert.Equal("xh", fallback.TextLanguage); Assert.Equal("sn", fallback.AudioLanguage);
+            Assert.DoesNotContain(".local", fallback.MediaUrl);
+            Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/feed?limit=0")).StatusCode);
             using var translatedForm = new MultipartFormDataContent();
             translatedForm.Add(new StringContent(reopened.ReviewVersion.ToString()), "reviewVersion");
             translatedForm.Add(new StringContent("true"), "permission");
@@ -76,9 +81,16 @@ public sealed class StoryPostgresEndpointTests
             StoryDraftResponse attached = (await client.GetFromJsonAsync<StoryDraftResponse>(draftRoute))!;
             Assert.NotNull(Assert.Single(attached.Translations).RecordingId);
             Assert.Equal("draft", Assert.Single(attached.Translations).Status);
+            Assert.Equal("sn", (await client.GetFromJsonAsync<StoryViewResponse>($"/api/feed/{story.Id}?language=xh"))!.TextLanguage);
             Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/api/stories/{story.Id}/recordings/xh")).StatusCode);
+            await client.PostAsJsonAsync($"/api/stories/{story.Id}/approvals/xh", new ApproveStoryRequest(attached.ReviewVersion));
+            StoryViewResponse translated = (await client.GetFromJsonAsync<StoryViewResponse>($"/api/feed/{story.Id}?language=xh"))!;
+            Assert.Equal("xh", translated.AudioLanguage);
+            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync(translated.MediaUrl)).StatusCode);
             await client.PutAsJsonAsync(draftRoute + "/transcript", new { Text = "Changed original" });
             Assert.False((await client.GetFromJsonAsync<StoryDraftResponse>(draftRoute))!.OriginalApproved);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync(translated.MediaUrl)).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/feed/{story.Id}?language=xh")).StatusCode);
         }
         finally
         {

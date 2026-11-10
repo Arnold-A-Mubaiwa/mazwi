@@ -8,4 +8,5 @@ public interface IStoryRepository
     Task SaveTranslationAsync(Guid storyId, TranslationDraft draft, CancellationToken cancellationToken);
     Task SaveApprovalAsync(Guid storyId, string language, Guid expectedVersion, CancellationToken cancellationToken);
     Task SaveRecordingAsync(Guid storyId, TranslationDraft draft, Guid expectedVersion, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Guid>> ListIdsAsync(bool approvedOnly, int offset, int limit, CancellationToken cancellationToken);
 }

@@ -151,6 +151,22 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
     }
 
     // Deletes only the specified identity, including its child rows; tests use their own generated IDs.
+    public async Task<IReadOnlyList<Guid>> ListIdsAsync(bool approvedOnly, int offset, int limit, CancellationToken cancellationToken)
+    {
+        if (offset < 0 || limit is < 1 or > 50)
+        {
+            throw new ArgumentOutOfRangeException(nameof(limit));
+        }
+
+        await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        IEnumerable<Guid> ids = await connection.QueryAsync<Guid>(new CommandDefinition("""
+            SELECT s.id FROM stories s WHERE NOT @ApprovedOnly OR
+                EXISTS (SELECT 1 FROM story_approvals a WHERE a.story_id = s.id AND a.language = s.original_language)
+            ORDER BY s.permission_recorded_at DESC, s.id DESC LIMIT @Limit OFFSET @Offset
+            """, new { ApprovedOnly = approvedOnly, Offset = offset, Limit = limit }, cancellationToken: cancellationToken));
+        return ids.ToArray();
+    }
+
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken);

@@ -20,8 +20,11 @@ function setLanguage(value: string) {
   try { window.localStorage.setItem(LANGUAGE_KEY, sessionLanguage); } catch { /* Keep a session-only preference. */ }
   window.dispatchEvent(new Event(changeEvent));
 }
+export function usePreferredLanguage(): LanguageCode {
+  return useSyncExternalStore(subscribe, getSnapshot, () => "sn" as const);
+}
 export function LanguagePicker() {
-  const code = useSyncExternalStore(subscribe, getSnapshot, () => "sn" as const);
+  const code = usePreferredLanguage();
   const selected = LANGUAGES.find((language) => language.code === code)!;
   return <div className="language-control">
     <div className="language-label"><span aria-hidden="true">◎</span><label htmlFor="language">Your language</label></div>
