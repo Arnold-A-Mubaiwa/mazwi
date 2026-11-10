@@ -50,13 +50,13 @@ public sealed class Story
         OriginalApproved = false;
         foreach (TranslationDraft draft in Translations)
         {
-            _translations[draft.Language] = new TranslationDraft(draft.Language, draft.Text.Value, draft.Recording);
+            _translations[draft.Language] = new TranslationDraft(draft.Language, draft.Text.Value, draft.Recording, notes: draft.Notes);
         }
 
         ReviewVersion = Guid.NewGuid();
     }
 
-    public TranslationDraft SetTranslation(string language, string text)
+    public TranslationDraft SetTranslation(string language, string text, TranslationNotes? notes = null, bool requireReview = false)
     {
         if (Transcript is null)
         {
@@ -70,12 +70,13 @@ public sealed class Story
         }
 
         _translations.TryGetValue(draft.Language, out TranslationDraft? previous);
-        if (previous?.Text == draft.Text)
+        notes ??= previous?.Notes ?? new TranslationNotes();
+        if (!requireReview && previous?.Text == draft.Text && previous.Notes.Items.SequenceEqual(notes.Items))
         {
             return previous;
         }
 
-        draft = new TranslationDraft(draft.Language, draft.Text.Value, previous?.Recording);
+        draft = new TranslationDraft(draft.Language, draft.Text.Value, previous?.Recording, notes: notes);
         _translations[draft.Language] = draft;
         ReviewVersion = Guid.NewGuid();
         return draft;
@@ -94,7 +95,7 @@ public sealed class Story
             throw new DomainException("Save the translation text before adding its recording.");
         }
 
-        _translations[language] = new TranslationDraft(language, draft.Text.Value, recording);
+        _translations[language] = new TranslationDraft(language, draft.Text.Value, recording, notes: draft.Notes);
         ReviewVersion = Guid.NewGuid();
     }
 
@@ -122,7 +123,7 @@ public sealed class Story
                 throw new DomainException("Save this translation before approval.");
             }
 
-            _translations[language] = new TranslationDraft(language, draft.Text.Value, draft.Recording, true);
+            _translations[language] = new TranslationDraft(language, draft.Text.Value, draft.Recording, true, draft.Notes);
         }
     }
 
@@ -132,6 +133,33 @@ public sealed class Story
         {
             throw new StoryConflictException();
         }
+    }
+
+    public string GetAiTranslationSource(string language, Guid expectedVersion)
+    {
+        EnsureVersion(expectedVersion);
+        if (Transcript is null || !OriginalApproved)
+        {
+            throw new AiDraftNotAllowedException("Save and approve the original transcript before requesting an AI draft.");
+        }
+
+        if (!StoryDetails.SupportsLanguage(language) || language == Details.Language)
+        {
+            throw new AiDraftNotAllowedException("Choose a supported language different from the original.");
+        }
+
+        if (Transcript.Value.Length > 6000)
+        {
+            throw new AiDraftNotAllowedException("AI drafts support up to 6,000 source characters. Use manual translation for longer stories.");
+        }
+
+        return Transcript.Value;
+    }
+
+    public TranslationDraft SetAiTranslation(string language, TranslationDraftResult result, Guid expectedVersion)
+    {
+        GetAiTranslationSource(language, expectedVersion);
+        return SetTranslation(language, result.Translation.Value, result.Notes, requireReview: true);
     }
 
     public ApprovedStoryVersion? SelectApprovedVersion(string language, bool originalAudio = false)

@@ -49,7 +49,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
         }
 
         IEnumerable<TranslationRow> drafts = await connection.QueryAsync<TranslationRow>(new CommandDefinition("""
-            SELECT d.language, d.text, d.media_id AS MediaId, d.media_extension AS MediaExtension, d.media_bytes AS MediaBytes,
+            SELECT d.language, d.text, d.notes, d.media_id AS MediaId, d.media_extension AS MediaExtension, d.media_bytes AS MediaBytes,
                 EXISTS (SELECT 1 FROM story_approvals a WHERE a.story_id = d.story_id AND a.language = d.language) AS IsApproved
             FROM story_translation_drafts d WHERE d.story_id = @Id ORDER BY d.language
             """, new { Id = id }, transaction, cancellationToken: cancellationToken));
@@ -58,7 +58,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
             new StoryRecording(string.Concat("recording", row.Extension), row.Bytes), row.PermissionRecordedAt, row.Transcript,
             drafts.Select(d => new TranslationDraft(d.Language, d.Text,
                 d.MediaId is Guid mediaId ? new TranslatedRecording(mediaId, new StoryRecording(string.Concat("recording", d.MediaExtension), d.MediaBytes!.Value)) : null,
-                d.IsApproved)), row.ReviewVersion, row.OriginalApproved);
+                d.IsApproved, new TranslationNotes(d.Notes))), row.ReviewVersion, row.OriginalApproved);
     }
 
     public async Task SaveTranscriptAsync(Story story, CancellationToken cancellationToken)
@@ -83,20 +83,43 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
         await transaction.CommitAsync(cancellationToken);
     }
 
-    public async Task SaveTranslationAsync(Guid storyId, TranslationDraft draft, CancellationToken cancellationToken)
+    public Task SaveTranslationAsync(Guid storyId, TranslationDraft draft, CancellationToken cancellationToken) =>
+        SaveTranslationCoreAsync(storyId, draft, null, cancellationToken);
+
+    public Task SaveAiTranslationAsync(Guid storyId, TranslationDraft draft, Guid expectedVersion, CancellationToken cancellationToken) =>
+        SaveTranslationCoreAsync(storyId, draft, expectedVersion, cancellationToken);
+
+    private async Task SaveTranslationCoreAsync(Guid storyId, TranslationDraft draft, Guid? expectedVersion, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(draft);
         await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken);
         await using NpgsqlTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
-        await LockAsync(connection, transaction, storyId, cancellationToken);
-        string? previous = await connection.QuerySingleOrDefaultAsync<string>(new CommandDefinition(
-            "SELECT text FROM story_translation_drafts WHERE story_id = @Id AND language = @Language", new { Id = storyId, draft.Language }, transaction, cancellationToken: cancellationToken));
-        if (previous != draft.Text.Value)
+        Guid version = await LockAsync(connection, transaction, storyId, cancellationToken);
+        if (expectedVersion.HasValue && version != expectedVersion.Value)
+        {
+            throw new StoryConflictException();
+        }
+
+        if (expectedVersion.HasValue)
+        {
+            bool approved = await connection.QuerySingleAsync<bool>(new CommandDefinition("""
+                SELECT EXISTS (SELECT 1 FROM story_approvals a JOIN stories s ON s.id = a.story_id
+                    WHERE s.id = @Id AND a.language = s.original_language AND s.transcript IS NOT NULL)
+                """, new { Id = storyId }, transaction, cancellationToken: cancellationToken));
+            if (!approved)
+            {
+                throw new StoryConflictException();
+            }
+        }
+
+        TranslationRow? previous = await connection.QuerySingleOrDefaultAsync<TranslationRow>(new CommandDefinition(
+            "SELECT text, notes FROM story_translation_drafts WHERE story_id = @Id AND language = @Language", new { Id = storyId, draft.Language }, transaction, cancellationToken: cancellationToken));
+        if (expectedVersion.HasValue || previous?.Text != draft.Text.Value || !previous.Notes.SequenceEqual(draft.Notes.Items))
         {
             await connection.ExecuteAsync(new CommandDefinition("""
-                INSERT INTO story_translation_drafts (story_id, language, text) VALUES (@Id, @Language, @Text)
-                ON CONFLICT (story_id, language) DO UPDATE SET text = EXCLUDED.text
-                """, new { Id = storyId, draft.Language, Text = draft.Text.Value }, transaction, cancellationToken: cancellationToken));
+                INSERT INTO story_translation_drafts (story_id, language, text, notes) VALUES (@Id, @Language, @Text, @Notes)
+                ON CONFLICT (story_id, language) DO UPDATE SET text = EXCLUDED.text, notes = EXCLUDED.notes
+                """, new { Id = storyId, draft.Language, Text = draft.Text.Value, Notes = draft.Notes.Items.ToArray() }, transaction, cancellationToken: cancellationToken));
             await InvalidateAsync(connection, transaction, storyId, draft.Language, cancellationToken);
         }
         await transaction.CommitAsync(cancellationToken);
@@ -192,6 +215,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
     {
         public string Language { get; set; } = string.Empty;
         public string Text { get; set; } = string.Empty;
+        public string[] Notes { get; set; } = [];
         public Guid? MediaId { get; set; }
         public string? MediaExtension { get; set; }
         public long? MediaBytes { get; set; }
