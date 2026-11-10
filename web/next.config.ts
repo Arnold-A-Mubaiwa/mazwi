@@ -7,6 +7,7 @@ if (!["http:", "https:"].includes(apiUrl.protocol) || apiUrl.username || apiUrl.
 
 const config: NextConfig = {
   poweredByHeader: false,
+  experimental: { proxyClientMaxBodySize: 26_000_000 },
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${apiUrl.origin}/api/:path*` }];
   },

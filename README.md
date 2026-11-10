@@ -1,6 +1,8 @@
 # mazwi
 
-Andela project: .NET 10 LTS task-item API with inward DDD dependencies.
+Mazwi: Every African story, in your language. A Next.js frontend and .NET 10 LTS API with inward DDD dependencies and PostgreSQL.
+
+Local story upload is available at `/upload`: save a consented recording privately and keep its metadata unpublished. See [story upload](docs/story-upload.md). AI processing and the approved-story feed are still pending. The task-item API below remains the original architecture example.
 
 ## Structure
 
@@ -13,7 +15,7 @@ Andela project: .NET 10 LTS task-item API with inward DDD dependencies.
 ## Local development
 
 Install the SDK pinned in global.json. PostgreSQL 18 is the current local target.
-Use separate development and test databases; the test database name must end in `_tests`.
+Normally use separate development and test databases; the test database name must end in `_tests`. The owner has temporarily approved using that test database for the local demo too. Both private environment settings point to it; application uploads will coexist with test records until development storage is separated.
 The tests migrate that test database and insert uniquely identified records; they never truncate it.
 
 Keep credentials in an ignored `.env`, ignored `src/Mazwi.WebApi/appsettings.Development.json`, process environment, or ASP.NET user-secrets (ID: `mazwi-webapi-development`).

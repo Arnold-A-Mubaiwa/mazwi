@@ -2,7 +2,7 @@
 
 Issue #9 adds a local Next.js App Router / TypeScript / Tailwind shell in `web/`.
 Business logic, AI calls, SQL, and persistence remain in the .NET backend layers.
-No upload, translation, feed media, or authentication workflow is implemented here.
+Issue #11 adds local story uploads. Translation, feed media and authentication remain pending; see docs/story-upload.md.
 
 ## Install and validate (repository root)
 
@@ -16,7 +16,7 @@ npm.cmd --prefix web run test:e2e
 ```
 
 The dependency manifest and lock file pin the installed versions.
-The production build must exist before the browser suite runs. The suite starts and stops its own .NET and production Next.js servers on ports 5046 and 3000; stop any other processes you own on those ports first.
+The production build must exist before the browser suite runs. First load the ignored environment with scripts/Set-LocalEnvironment.ps1 and run the .NET tests to migrate the dedicated test database. Browser uploads use MAZWI_TEST_CONNECTION_STRING and private .local/browser-media storage. The suite starts and stops its own .NET and production Next.js servers on ports 5046 and 3000; stop any other processes you own on those ports first.
 Browser tests use the installed Microsoft Edge channel, not a downloaded browser.
 The test checks actual API responses through the Next.js proxy, navigation, persisted preferences, mobile/desktop layout, and an unavailable-API response.
 Generated `.next/`, browser artifacts, TypeScript build metadata, and `node_modules/` are ignored by Git.
@@ -44,8 +44,8 @@ Do not put OpenAI keys, database credentials, SQL, or business rules in frontend
 
 The UI uses a dark earth palette, ochre and red accents, large headings, and a phone-first layout.
 The language preference is saved locally; choosing a language does not claim that generated audio has passed review.
-Until stories are implemented, the viewer sees an honest empty state instead of fake approved recordings.
-`web/lib/config.ts` holds `FEATURES`; upload and all future-level features remain disabled. Client flags are display controls, not authorization.
+Until approval and playback are implemented, the viewer sees an honest empty state instead of fake approved recordings.
+`web/lib/config.ts` holds `FEATURES`; local uploads are enabled and later features remain disabled. Client flags are display controls, not authorization.
 
 The .NET build and format checks pass, and the health test runs without database credentials.
-The existing full .NET suite still has 9 PostgreSQL-dependent failures until `MAZWI_TEST_CONNECTION_STRING` is configured. Do not report those checks as passed or silently skip them.
+The PostgreSQL-dependent suite now passes with the configured local test database. Missing credentials still fail explicitly; never silently skip these tests.

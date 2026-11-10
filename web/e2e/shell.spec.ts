@@ -5,7 +5,7 @@ test("Home_NavigationAndPreference_WorksAfterReload", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Every African story/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: /first voices/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /upload/i })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Upload", exact: true })).toHaveAttribute("href", "/upload");
   await page.getByRole("combobox", { name: "Your language", exact: true }).selectOption("xh");
   await expect(page.getByText("Molo. Make yourself at home.")).toBeVisible();
   await page.reload();
