@@ -44,7 +44,7 @@ It prints how many stories it claimed and only claims stories that have no owner
 ## Limits
 
 - No password reset or email verification yet. Keep the app on localhost or a trusted network until those exist.
-- No account deletion screen. Deleting an artist row leaves their stories unowned until claimed.
+- Account deletion (issue #46, docs/artist-control.md) deletes the artist and every story they own.
 - The local app and tests used to share the `_tests` database; issue #45 separated them (docs/databases.md).
 - **Behind the Next.js proxy every request reaches the API from 127.0.0.1**, so the sign-in rate limit is one shared bucket for the whole site. Next passes a client-sent `X-Forwarded-For` through unchanged, so it cannot be trusted. Before hosting, put a trusted reverse proxy in front that sets forwarded headers, and enable `UseForwardedHeaders` for it.
 - For the same reason the API never sees HTTPS, so the cookie is not marked `Secure` yet. That also needs the trusted proxy before hosting.

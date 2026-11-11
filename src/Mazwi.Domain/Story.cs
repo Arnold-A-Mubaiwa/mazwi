@@ -261,6 +261,28 @@ public sealed class Story
         return new(translation.Language, Details.Language, translation.Text, Id, Recording, SpeakerChecked: translation.SpeakerChecked, Cues: cues);
     }
 
+    // Takes the story out of the feed by removing every approval. The artist can approve again later.
+    public void Unpublish(Guid expectedVersion)
+    {
+        EnsureVersion(expectedVersion);
+        if (!OriginalApproved)
+        {
+            throw new DomainException("This story is not published.");
+        }
+
+        OriginalApproved = false;
+        foreach (TranslationDraft draft in Translations)
+        {
+            _translations[draft.Language] = new TranslationDraft(draft.Language, draft.Text.Value, draft.Recording, notes: draft.Notes);
+        }
+
+        ReviewVersion = Guid.NewGuid();
+    }
+
+    // Every recording file this story keeps, so deleting the story can remove them all.
+    public IReadOnlyList<StoredRecording> RecordingFiles() =>
+        [new StoredRecording(Id, Recording), .. Translations.Where(draft => draft.Recording is not null).Select(draft => new StoredRecording(draft.Recording!.Id, draft.Recording.File))];
+
     // A play counts only for the approved version the viewer was shown; it is credited to the language they read.
     // Returns null for an unapproved story, an unsupported language or a version that has since changed.
     public StoryPlay? RecordPlay(string language, Guid version, DateOnly day)
