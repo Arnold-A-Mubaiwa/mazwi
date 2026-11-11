@@ -217,3 +217,7 @@ h3 { font-size: 35px; line-height: 1.14; letter-spacing: -1px; margin: 0 0 15px;
 .danger-button { background: #b4533a; color: var(--paper); }
 .danger-button:disabled { opacity: 0.5; cursor: not-allowed; }
 .account-email { color: var(--muted); }
+.verify-banner { margin: 24px 0; padding: 14px 18px; border: 1px solid var(--ochre); border-radius: 4px; }
+.verify-banner p { margin: 0 0 8px; }
+.account-sent { max-width: 520px; line-height: 1.6; }
+.account-sent code { overflow-wrap: anywhere; }

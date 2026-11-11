@@ -44,6 +44,7 @@ export function AccountForm({ mode, next }: { mode: AccountMode; next: string })
       <button className="retry-button" type="submit">{busy ? "One moment…" : signup ? "Create account" : "Sign in"}</button>
     </fieldset>
     {error && <p className="upload-error" role="alert">{error}</p>}
+    {!signup && <p className="account-switch"><Link className="text-link" href="/forgot-password">Forgot your password?</Link></p>}
     <p className="account-switch">{signup ? "Already have an account?" : "New to Mazwi?"} <Link className="text-link" href={other}>{signup ? "Sign in instead" : "Create an account"}</Link></p>
   </form>;
 }
