@@ -1,9 +1,11 @@
 import { LANGUAGES, type LanguageCode } from "./languages.ts";
+import { isCue, type SubtitleCue } from "./subtitles.ts";
 
 export type ViewerStory = {
   id: string; title: string; artistName: string; community: string; country: string; type: string;
   originalLanguage: LanguageCode; textLanguage: LanguageCode; audioLanguage: LanguageCode;
   text: string; recordingExtension: string; originalRecordingExtension?: string; reviewVersion: string; availableLanguages: LanguageCode[]; mediaUrl: string; audioVoice?: "standard" | "clone" | null; speakerChecked?: boolean;
+  cues?: SubtitleCue[] | null; subtitlesUrl?: string | null;
 };
 export type FeedPage = { items: ViewerStory[]; nextOffset: number | null };
 export function languageName(code: string): string { return LANGUAGES.find(item => item.code === code)?.name ?? code; }
@@ -30,6 +32,8 @@ function isStory(value: unknown): value is ViewerStory {
     && known(s.originalLanguage) && known(s.textLanguage) && known(s.audioLanguage)
     && Array.isArray(s.availableLanguages) && s.availableLanguages.every(known)
     && (s.speakerChecked == null || typeof s.speakerChecked === "boolean")
+    && (s.cues == null || (Array.isArray(s.cues) && s.cues.every(isCue)))
+    && (s.subtitlesUrl == null || String(s.subtitlesUrl).startsWith(`/api/feed/${s.id}/subtitles?`))
     && String(s.mediaUrl).startsWith(`/api/feed/${s.id}/recording?`);
 }
 async function request(url: string, signal?: AbortSignal): Promise<unknown> {

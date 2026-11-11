@@ -1,12 +1,13 @@
 import { LANGUAGES, type LanguageCode } from "./languages.ts";
+import type { SubtitleTiming } from "./subtitles.ts";
 
 export const MAX_STORY_TEXT = 20_000;
 export const MAX_VOICE_TEXT = 1_800;
-export type TranslationDraft = { language: LanguageCode; text: string; status: "draft" | "approved"; recordingId?: string | null; recordingExtension?: string | null; notes?: string[] | null; recordingVoice?: "standard" | "clone" | null; speakerChecked?: boolean };
+export type TranslationDraft = { language: LanguageCode; text: string; status: "draft" | "approved"; recordingId?: string | null; recordingExtension?: string | null; notes?: string[] | null; recordingVoice?: "standard" | "clone" | null; speakerChecked?: boolean; timing?: SubtitleTiming | null };
 export type StoryDraft = {
   id: string; title: string; artistName: string; language: LanguageCode; status: "unpublished" | "published";
   reviewVersion: string; originalApproved: boolean; recordingExtension: string;
-  transcript: string | null; translations: TranslationDraft[];
+  transcript: string | null; translations: TranslationDraft[]; originalTiming?: SubtitleTiming | null;
 };
 
 export function storyTextError(text: string): string | null {
@@ -14,6 +15,12 @@ export function storyTextError(text: string): string | null {
   if (!value || value.length > MAX_STORY_TEXT) return "Enter 1–20,000 characters of story text.";
   if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/.test(value)) return "Remove control characters. Line breaks and tabs are allowed.";
   return null;
+}
+
+function isTimingValue(value: unknown): boolean {
+  if (value == null) return true;
+  const timing = value as Record<string, unknown>;
+  return typeof value === "object" && Array.isArray(timing.startsMs) && timing.startsMs.every(Number.isInteger) && Number.isInteger(timing.endMs);
 }
 
 function isLanguage(value: unknown): value is LanguageCode {
@@ -26,6 +33,7 @@ function isTranslation(value: unknown): value is TranslationDraft {
   return isLanguage(draft.language) && typeof draft.text === "string" && ["draft", "approved"].includes(String(draft.status))
     && (draft.recordingVoice == null || draft.recordingVoice === "standard" || draft.recordingVoice === "clone")
     && (draft.speakerChecked == null || typeof draft.speakerChecked === "boolean")
+    && isTimingValue(draft.timing)
     && (draft.notes == null || (Array.isArray(draft.notes) && draft.notes.length <= 20 && draft.notes.every(note => typeof note === "string" && note.trim().length > 0 && note.length <= 1000)));
 }
 
@@ -50,7 +58,7 @@ export async function readDraft(response: Response, id: string): Promise<StoryDr
     || !["unpublished", "published"].includes(draft.status) || typeof draft.reviewVersion !== "string"
     || typeof draft.originalApproved !== "boolean" || typeof draft.recordingExtension !== "string"
     || (draft.transcript !== null && typeof draft.transcript !== "string")
-    || !Array.isArray(draft.translations) || !draft.translations.every(isTranslation)) {
+    || !Array.isArray(draft.translations) || !draft.translations.every(isTranslation) || !isTimingValue(draft.originalTiming)) {
     throw new Error("The API returned an unexpected story. Your edits have not been confirmed saved.");
   }
   return draft;
