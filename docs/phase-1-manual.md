@@ -57,7 +57,7 @@ Artist/community/country credit is visible. Next/previous, focused arrow keys an
 | Explicit approval, stale-review protection and revocation | Hosted access control (artist accounts: docs/accounts.md) |
 | Approved feed/story playback, saved language preference, credits | Story Twins, voice stamps/cloning and Android bubble (play statistics: docs/play-stats.md; PWA and sharing: docs/pwa-sharing.md) |
 
-This is a localhost demo. Both application and tests temporarily use the owner's approved shared test database; unpublished synthetic fixture metadata may appear in Studio. Separate databases before hosting.
+This is a localhost demo. Since issue #45 the app and the tests use separate databases (docs/databases.md), so test fixtures no longer appear in Studio.
 Browser test files stay separate from real artist files. Tests delete or revoke synthetic approvals, so they do not publish fabricated demo content.
 Actual artist content, permission, transcription accuracy and translations still need human review. Real recordings are never published automatically by setup or tests.
 Replaced recordings can remain privately stored for later cleanup. Concurrent text edits are last-write-wins per field. Already downloaded audio cannot be recalled.

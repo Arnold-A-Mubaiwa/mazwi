@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Npgsql;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+DatabaseSafety.EnsureAppDatabase(builder.Configuration.GetConnectionString("Mazwi"), builder.Environment);
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
@@ -107,6 +108,7 @@ app.UseRateLimiter();
 app.MapControllers();
 
 int claimIndex = Array.IndexOf(args, "--claim-stories");
+int importIndex = Array.IndexOf(args, "--import-stories");
 if (args.Contains("--migrate", StringComparer.Ordinal))
 {
     string connectionString = app.Configuration.GetConnectionString("Mazwi")
@@ -134,6 +136,29 @@ else if (claimIndex >= 0)
             Console.Error.WriteLine(failure.Message);
             Environment.ExitCode = 1;
         }
+    }
+}
+else if (importIndex >= 0)
+{
+    // Copies unowned stories by one artist from ConnectionStrings:MazwiImportSource into this app's database.
+    string? sourceConnection = app.Configuration.GetConnectionString("MazwiImportSource");
+    if (importIndex + 1 >= args.Length || string.IsNullOrWhiteSpace(sourceConnection))
+    {
+        Console.Error.WriteLine("Usage: --import-stories <artist name> [--apply], with ConnectionStrings:MazwiImportSource set to the old database.");
+        Environment.ExitCode = 1;
+    }
+    else
+    {
+        bool apply = args.Contains("--apply", StringComparer.Ordinal);
+        await using NpgsqlDataSource source = NpgsqlDataSource.Create(sourceConnection);
+        var importer = new StoryImporter(source, app.Services.GetRequiredService<NpgsqlDataSource>());
+        IReadOnlyList<ImportedStory> stories = await importer.ImportUnownedAsync(args[importIndex + 1], apply, CancellationToken.None);
+        foreach (ImportedStory story in stories)
+        {
+            Console.WriteLine($"{(story.AlreadyPresent ? "already here" : apply ? "copied" : "would copy")}: {story.Title} ({story.Id})");
+        }
+
+        Console.WriteLine(apply ? $"Done. {stories.Count(story => !story.AlreadyPresent)} copied." : $"Dry run: {stories.Count} found. Add --apply to copy them.");
     }
 }
 else
