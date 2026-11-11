@@ -26,6 +26,7 @@ public sealed class ApprovalEndpointTests : IDisposable
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
+            builder.SignInTestArtist();
             builder.ConfigureServices(services => { services.RemoveAll<IStoryReviewService>(); services.AddSingleton(_service); });
         });
         _client = _factory.CreateClient();

@@ -4,7 +4,7 @@ public sealed class SpeakerCheckedTests
 {
     private static Story ApprovedOriginal()
     {
-        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 19), true);
+        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 19), true, TestOwner.Id);
         story.SetTranscript("Kare kare"); story.SetTranslation("xh", "Kudala");
         story.Approve("sn", story.ReviewVersion);
         return story;

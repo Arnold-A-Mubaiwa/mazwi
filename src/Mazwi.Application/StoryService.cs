@@ -9,7 +9,7 @@ public sealed class StoryService(IStoryRepository repository, IStoryMediaStore m
         cancellationToken.ThrowIfCancellationRequested();
         var details = new StoryDetails(command.Title, command.ArtistName, command.Community, command.Country, command.Type, command.Language);
         var recording = new StoryRecording(command.FileName, command.Bytes);
-        Story story = Story.Upload(details, recording, command.Permission);
+        Story story = Story.Upload(details, recording, command.Permission, command.OwnerId);
         await mediaStore.SaveAsync(story.Id, recording, content, cancellationToken);
         try
         {

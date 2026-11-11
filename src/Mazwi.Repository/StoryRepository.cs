@@ -13,9 +13,9 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
         await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken);
         await connection.ExecuteAsync(new CommandDefinition("""
             INSERT INTO stories (id, title, artist_name, community, country, story_type, original_language,
-                recording_extension, recording_bytes, permission_recorded_at, review_version)
+                recording_extension, recording_bytes, permission_recorded_at, review_version, owner_id)
             VALUES (@Id, @Title, @ArtistName, @Community, @Country, @Type, @Language,
-                @Extension, @Bytes, @PermissionRecordedAt, @ReviewVersion)
+                @Extension, @Bytes, @PermissionRecordedAt, @ReviewVersion, @OwnerId)
             """, new
         {
             story.Id,
@@ -28,7 +28,8 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
             story.Recording.Extension,
             story.Recording.Bytes,
             story.PermissionRecordedAt,
-            story.ReviewVersion
+            story.ReviewVersion,
+            story.OwnerId
         }, cancellationToken: cancellationToken));
     }
 
@@ -39,7 +40,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
         StoryRow? row = await connection.QuerySingleOrDefaultAsync<StoryRow>(new CommandDefinition("""
             SELECT s.id, s.title, s.artist_name AS ArtistName, s.community, s.country, s.story_type AS Type,
                 s.original_language AS Language, s.recording_extension AS Extension, s.recording_bytes AS Bytes,
-                s.permission_recorded_at AS PermissionRecordedAt, s.transcript, s.review_version AS ReviewVersion,
+                s.permission_recorded_at AS PermissionRecordedAt, s.transcript, s.review_version AS ReviewVersion, s.owner_id AS OwnerId,
                 EXISTS (SELECT 1 FROM story_approvals a WHERE a.story_id = s.id AND a.language = s.original_language) AS OriginalApproved
             FROM stories s WHERE s.id = @Id
             """, new { Id = id }, transaction, cancellationToken: cancellationToken));
@@ -59,7 +60,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
             new StoryRecording(string.Concat("recording", row.Extension), row.Bytes), row.PermissionRecordedAt, row.Transcript,
             drafts.Select(d => new TranslationDraft(d.Language, d.Text,
                 d.MediaId is Guid mediaId ? new TranslatedRecording(mediaId, new StoryRecording(string.Concat("recording", d.MediaExtension), d.MediaBytes!.Value), d.MediaVoice) : null,
-                d.IsApproved, new TranslationNotes(d.Notes), d.SpeakerChecked)), row.ReviewVersion, row.OriginalApproved);
+                d.IsApproved, new TranslationNotes(d.Notes), d.SpeakerChecked)), row.ReviewVersion, row.OriginalApproved, row.OwnerId);
     }
 
     public Task SaveTranscriptAsync(Story story, CancellationToken cancellationToken) =>
@@ -202,6 +203,28 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
         return ids.ToArray();
     }
 
+    public async Task<IReadOnlyList<Guid>> ListOwnedIdsAsync(Guid ownerId, int offset, int limit, CancellationToken cancellationToken)
+    {
+        if (offset < 0 || limit is < 1 or > 50)
+        {
+            throw new ArgumentOutOfRangeException(nameof(limit));
+        }
+
+        await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        IEnumerable<Guid> ids = await connection.QueryAsync<Guid>(new CommandDefinition("""
+            SELECT s.id FROM stories s WHERE s.owner_id = @OwnerId
+            ORDER BY s.permission_recorded_at DESC, s.id DESC LIMIT @Limit OFFSET @Offset
+            """, new { OwnerId = ownerId, Offset = offset, Limit = limit }, cancellationToken: cancellationToken));
+        return ids.ToArray();
+    }
+
+    public async Task<int> ClaimUnownedAsync(Guid ownerId, CancellationToken cancellationToken)
+    {
+        await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        return await connection.ExecuteAsync(new CommandDefinition(
+            "UPDATE stories SET owner_id = @OwnerId WHERE owner_id IS NULL", new { OwnerId = ownerId }, cancellationToken: cancellationToken));
+    }
+
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken);
@@ -238,6 +261,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
 
     private sealed class StoryRow
     {
+        public Guid? OwnerId { get; set; }
         public Guid Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string ArtistName { get; set; } = string.Empty;

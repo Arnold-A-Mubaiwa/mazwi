@@ -28,12 +28,18 @@ public sealed class StoryPostgresEndpointTests
         {
             builder.UseEnvironment("Testing");
             builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(
-                new Dictionary<string, string?> { ["ConnectionStrings:Mazwi"] = connectionString, ["MediaStorage:Root"] = root }));
+                new Dictionary<string, string?> { ["ConnectionStrings:Mazwi"] = connectionString, ["MediaStorage:Root"] = root, ["Mazwi:AccountRequestsPerMinute"] = "100" }));
         });
         using HttpClient client = factory.CreateClient();
+        using HttpClient other = factory.CreateClient();
         Guid? createdId = null;
+        var artistIds = new List<Guid>();
         try
         {
+            using var signedOutForm = StoriesEndpointTests.Form();
+            Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsync("/api/stories", signedOutForm)).StatusCode);
+            artistIds.Add(await SignUpAsync(client));
+            artistIds.Add(await SignUpAsync(other));
             using var form = StoriesEndpointTests.Form();
             // Act
             HttpResponseMessage response = await client.PostAsync("/api/stories", form);
@@ -96,14 +102,25 @@ public sealed class StoryPostgresEndpointTests
             Assert.False((await client.GetFromJsonAsync<StoryDraftResponse>(draftRoute))!.OriginalApproved);
             Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync(translated.MediaUrl)).StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/feed/{story.Id}?language=xh")).StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, (await other.GetAsync(draftRoute)).StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, (await other.PostAsJsonAsync($"/api/stories/{story.Id}/approvals/sn", new ApproveStoryRequest(Guid.NewGuid()))).StatusCode);
+            Assert.DoesNotContain((await other.GetFromJsonAsync<StudioPageResponse>("/api/studio?limit=50"))!.Items, item => item.Id == story.Id);
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync("/api/account/signout", null)).StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync(draftRoute)).StatusCode);
         }
         finally
         {
+            await using NpgsqlDataSource dataSource = NpgsqlDataSource.Create(connectionString);
             if (createdId is Guid fixtureId)
             {
-                await using NpgsqlDataSource dataSource = NpgsqlDataSource.Create(connectionString);
                 await new StoryRepository(dataSource).DeleteAsync(fixtureId, CancellationToken.None);
             }
+
+            foreach (Guid artistId in artistIds)
+            {
+                await new ArtistRepository(dataSource).DeleteAsync(artistId, CancellationToken.None);
+            }
+
             if (Directory.Exists(root))
             {
                 foreach (string file in Directory.GetFiles(root))
@@ -114,5 +131,13 @@ public sealed class StoryPostgresEndpointTests
                 Directory.Delete(root);
             }
         }
+    }
+
+    private static async Task<Guid> SignUpAsync(HttpClient client)
+    {
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/account/signup",
+            new { Email = $"endpoint-{Guid.NewGuid():N}@mazwi.test", Password = "a long test password" });
+        Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
+        return (await response.Content.ReadFromJsonAsync<ArtistResponse>())!.Id;
     }
 }

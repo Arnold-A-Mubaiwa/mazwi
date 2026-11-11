@@ -9,7 +9,7 @@ public sealed class TranslationNotesRepositoryTests(PostgresFixture fixture) : I
     {
         // Arrange
         var repository = new StoryRepository(fixture.DataSource);
-        Story story = Story.Upload(new StoryDetails("Notes test", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("Notes test", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         await repository.AddAsync(story, CancellationToken.None);
         try
         {
@@ -42,7 +42,7 @@ public sealed class TranslationNotesRepositoryTests(PostgresFixture fixture) : I
     {
         // Arrange
         var repository = new StoryRepository(fixture.DataSource);
-        Story story = Story.Upload(new StoryDetails("AI race test", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("AI race test", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         await repository.AddAsync(story, CancellationToken.None);
         try
         {

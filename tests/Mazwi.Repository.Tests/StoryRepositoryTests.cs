@@ -10,7 +10,7 @@ public sealed class StoryRepositoryTests(PostgresFixture fixture) : IClassFixtur
     {
         // Arrange
         var repository = new StoryRepository(fixture.DataSource);
-        Story story = Story.Upload(new StoryDetails("Tsuro's tale; DROP TABLE stories;--", "Rudo", "Shona", "ZW", "folktale", "sn"), new StoryRecording("clip.mp4", 200), true);
+        Story story = Story.Upload(new StoryDetails("Tsuro's tale; DROP TABLE stories;--", "Rudo", "Shona", "ZW", "folktale", "sn"), new StoryRecording("clip.mp4", 200), true, TestOwner.Id);
         // Act
         await repository.AddAsync(story, CancellationToken.None);
         Story? loaded = await repository.GetAsync(story.Id, CancellationToken.None);
@@ -36,7 +36,7 @@ public sealed class StoryRepositoryTests(PostgresFixture fixture) : IClassFixtur
     {
         // Arrange
         var repository = new StoryRepository(fixture.DataSource);
-        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         await repository.AddAsync(story, CancellationToken.None);
         // Act / Assert
         PostgresException error = await Assert.ThrowsAsync<PostgresException>(() => repository.AddAsync(story, CancellationToken.None));

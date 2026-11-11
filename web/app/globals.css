@@ -192,3 +192,8 @@ h3 { font-size: 35px; line-height: 1.14; letter-spacing: -1px; margin: 0 0 15px;
 .section-heading { gap: 12px; flex-wrap: wrap; }
 .retry-button { min-height: 44px; }
 @media (max-width: 650px) { .hero-description { font-size: 15px; } .site-header nav { font-size: 13px; } .language-label { font-size: 13px; } select { font-size: 16px; } .empty-stories > p:not(.eyebrow) { font-size: 14px; } }
+.header-signout { min-height: 44px; display: inline-flex; align-items: center; padding: 12px 0; background: none; border: 0; color: inherit; font: inherit; cursor: pointer; }
+.header-signout:hover, .header-signout:focus-visible { color: var(--ochre); }
+.account-form { max-width: 460px; }
+.account-switch { margin-top: 26px; font-size: 14px; color: var(--muted); }
+.account-form { margin-top: 32px; }

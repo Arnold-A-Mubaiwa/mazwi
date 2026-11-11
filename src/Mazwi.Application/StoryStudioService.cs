@@ -4,9 +4,9 @@ namespace Mazwi.Application;
 
 public sealed class StoryStudioService(IStoryRepository repository) : IStoryStudioService
 {
-    public async Task<StoryStudioPageDto> GetPageAsync(int offset, int limit, CancellationToken cancellationToken)
+    public async Task<StoryStudioPageDto> GetPageAsync(Guid ownerId, int offset, int limit, CancellationToken cancellationToken)
     {
-        IReadOnlyList<Guid> ids = await repository.ListIdsAsync(false, offset, limit, cancellationToken);
+        IReadOnlyList<Guid> ids = await repository.ListOwnedIdsAsync(ownerId, offset, limit, cancellationToken);
         var items = new List<StoryDto>();
         foreach (Guid id in ids)
         {

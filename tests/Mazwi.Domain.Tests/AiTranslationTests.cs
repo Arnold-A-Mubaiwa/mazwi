@@ -4,7 +4,7 @@ public sealed class AiTranslationTests
 {
     private static Story ApprovedStory()
     {
-        Story story = Story.Upload(new StoryDetails("Poem", "Artist", "Shona", "ZW", "poem", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("Poem", "Artist", "Shona", "ZW", "poem", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         story.SetTranscript("Original\nSecond line");
         story.SetTranslation("xh", "Translation", new TranslationNotes(["Keep Sekuru."]));
         story.SetTranslation("en", "English");

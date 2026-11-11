@@ -9,8 +9,8 @@ public sealed class StoryFeedRepositoryTests(PostgresFixture fixture) : IClassFi
     {
         // Arrange
         var repository = new StoryRepository(fixture.DataSource);
-        Story approved = Story.Upload(new StoryDetails("Feed fixture", "Test artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 19), true);
-        Story draft = Story.Upload(approved.Details, approved.Recording, true);
+        Story approved = Story.Upload(new StoryDetails("Feed fixture", "Test artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 19), true, TestOwner.Id);
+        Story draft = Story.Upload(approved.Details, approved.Recording, true, TestOwner.Id);
         await repository.AddAsync(approved, CancellationToken.None); await repository.AddAsync(draft, CancellationToken.None);
         try
         {

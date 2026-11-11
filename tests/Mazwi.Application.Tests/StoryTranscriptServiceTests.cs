@@ -9,7 +9,7 @@ public sealed class StoryTranscriptServiceTests
     private readonly IStoryRepository _repository = Substitute.For<IStoryRepository>();
     private readonly IStoryMediaStore _mediaStore = Substitute.For<IStoryMediaStore>();
     private readonly ITranscriber _transcriber = Substitute.For<ITranscriber>();
-    private readonly Story _story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.m4a", 12), true);
+    private readonly Story _story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.m4a", 12), true, TestOwner.Id);
 
     private StoryTranscriptService Service(bool recordingExists = true)
     {

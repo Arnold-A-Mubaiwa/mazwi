@@ -1,14 +1,51 @@
+using System.Threading.RateLimiting;
 using Mazwi.Ai;
 using Mazwi.Application;
 using Mazwi.Domain;
 using Mazwi.Repository;
 using Mazwi.WebApi;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Npgsql;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
+{
+    options.Cookie.Name = "mazwi_session";
+    options.Cookie.HttpOnly = true;
+    // Lax keeps the cookie off cross-site POSTs, which is the CSRF defence for this JSON/multipart API.
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.ExpireTimeSpan = TimeSpan.FromDays(14);
+    options.SlidingExpiration = true;
+    options.Events.OnRedirectToLogin = context => WriteStatus(context.Response, StatusCodes.Status401Unauthorized);
+    options.Events.OnRedirectToAccessDenied = context => WriteStatus(context.Response, StatusCodes.Status403Forbidden);
+    options.Events.OnValidatePrincipal = async context =>
+    {
+        // A session whose account no longer exists is signed out.
+        Guid artistId = context.Principal?.ArtistId() ?? Guid.Empty;
+        IArtistAccountService accounts = context.HttpContext.RequestServices.GetRequiredService<IArtistAccountService>();
+        if (artistId == Guid.Empty || await accounts.GetAsync(artistId, context.HttpContext.RequestAborted) is null)
+        {
+            context.RejectPrincipal();
+        }
+    };
+});
+builder.Services.AddAuthorization();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(AccountLimits.Policy, context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "local",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = context.RequestServices.GetRequiredService<IConfiguration>().GetValue("Mazwi:AccountRequestsPerMinute", 10),
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+        }));
+});
 builder.Services.AddSingleton(_ =>
 {
     string? connectionString = builder.Configuration.GetConnectionString("Mazwi");
@@ -22,6 +59,10 @@ builder.Services.AddSingleton(_ =>
 builder.Services.AddScoped<ITaskItemRepository, TaskItemRepository>();
 builder.Services.AddScoped<ITaskItemService, TaskItemService>();
 builder.Services.AddScoped<IStoryRepository, StoryRepository>();
+builder.Services.AddScoped<IArtistRepository, ArtistRepository>();
+builder.Services.AddSingleton<Mazwi.Domain.IPasswordHasher, AspNetPasswordHasher>();
+builder.Services.AddScoped<IArtistAccountService, ArtistAccountService>();
+builder.Services.AddScoped<IStoryAccessService, StoryAccessService>();
 builder.Services.AddScoped<IStoryService, StoryService>();
 builder.Services.AddScoped<IStoryDraftService, StoryDraftService>();
 // A raw HttpClient has no request/response logging handlers or retry policies.
@@ -47,17 +88,35 @@ builder.Services.AddSingleton<IStoryMediaStore>(_ => new LocalStoryMediaStore(
 
 WebApplication app = builder.Build();
 app.UseExceptionHandler();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseRateLimiter();
 app.MapControllers();
 
+int claimIndex = Array.IndexOf(args, "--claim-stories");
 if (args.Contains("--migrate", StringComparer.Ordinal))
 {
     string connectionString = app.Configuration.GetConnectionString("Mazwi")
         ?? throw new InvalidOperationException("ConnectionStrings:Mazwi is required.");
     new DatabaseMigrator(connectionString).Migrate(app.Lifetime.ApplicationStopping);
 }
+else if (claimIndex >= 0)
+{
+    // Gives every story saved before accounts existed to the named account.
+    string email = claimIndex + 1 < args.Length ? args[claimIndex + 1] : throw new InvalidOperationException("Usage: --claim-stories <email>");
+    await using AsyncServiceScope scope = app.Services.CreateAsyncScope();
+    int claimed = await scope.ServiceProvider.GetRequiredService<IArtistAccountService>().ClaimUnownedStoriesAsync(email, CancellationToken.None);
+    Console.WriteLine($"Claimed {claimed} unowned stories.");
+}
 else
 {
     await app.RunAsync();
+}
+
+static Task WriteStatus(HttpResponse response, int status)
+{
+    response.StatusCode = status;
+    return Task.CompletedTask;
 }
 
 public partial class Program;

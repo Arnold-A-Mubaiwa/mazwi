@@ -16,7 +16,7 @@ Supported languages are Shona, isiXhosa, Kiswahili and English. The original lan
 Each text must contain 1–20,000 characters after trimming its outer whitespace. Internal line breaks, tabs, names and punctuation are preserved; other control characters are rejected.
 An original transcript must be saved before translations. Save changes to the original before editing translations.
 Changing the original preserves existing translation drafts; the artist must check them again for meaning.
-Automatic translation, generated voices and accounts remain pending. Issue #15 adds explicit artist approval and local recording playback; see docs/artist-approval.md.
+AI drafts and voices arrived in Level 1; artist accounts in docs/accounts.md. Issue #15 adds explicit artist approval and local recording playback; see docs/artist-approval.md.
 
 ## Save behavior
 

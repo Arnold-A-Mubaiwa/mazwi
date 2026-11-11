@@ -8,7 +8,7 @@ public sealed class AiTranslationServiceTests
 {
     private readonly IStoryRepository _repository = Substitute.For<IStoryRepository>();
     private readonly ITranslationDrafter _drafter = Substitute.For<ITranslationDrafter>();
-    private readonly Story _story = Story.Upload(new StoryDetails("Poem", "Artist", "Shona", "ZW", "poem", "sn"), new StoryRecording("clip.wav", 12), true);
+    private readonly Story _story = Story.Upload(new StoryDetails("Poem", "Artist", "Shona", "ZW", "poem", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
 
     private StoryDraftService Service(bool approved = true)
     {

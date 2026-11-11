@@ -7,7 +7,7 @@ public sealed class StoryFeedServiceTests
 {
     private readonly IStoryRepository _repository = Substitute.For<IStoryRepository>();
     private readonly IStoryMediaStore _media = Substitute.For<IStoryMediaStore>();
-    private readonly Story _story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 19), true);
+    private readonly Story _story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 19), true, TestOwner.Id);
     private StoryFeedService Service(bool approve = true)
     {
         _story.SetTranscript("Original"); _story.SetTranslation("xh", "Translated");

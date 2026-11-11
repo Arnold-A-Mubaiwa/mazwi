@@ -9,7 +9,7 @@ public sealed class SpeakerCheckedRepositoryTests(PostgresFixture fixture) : ICl
     {
         // Arrange
         var repository = new StoryRepository(fixture.DataSource);
-        Story story = Story.Upload(new StoryDetails("Speaker check test", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("Speaker check test", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         await repository.AddAsync(story, CancellationToken.None);
         try
         {

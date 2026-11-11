@@ -8,7 +8,7 @@ public sealed class StoryTests
     public void Upload_ConsentedStory_TrimsDetailsAndStaysUnpublished()
     {
         // Act
-        Story story = Story.Upload(Details(), new StoryRecording("../../original.MP4", 12), true);
+        Story story = Story.Upload(Details(), new StoryRecording("../../original.MP4", 12), true, TestOwner.Id);
         // Assert
         Assert.NotEqual(Guid.Empty, story.Id);
         Assert.Equal("Tsuro", story.Details.Title);
@@ -24,7 +24,7 @@ public sealed class StoryTests
     public void Upload_NoPermission_RejectsStory()
     {
         // Act / Assert
-        Assert.Throws<DomainException>(() => Story.Upload(Details(), new StoryRecording("clip.wav", 12), false));
+        Assert.Throws<DomainException>(() => Story.Upload(Details(), new StoryRecording("clip.wav", 12), false, TestOwner.Id));
     }
 
     [Theory]
@@ -98,7 +98,7 @@ public sealed class StoryTests
         // Act / Assert
         Assert.Throws<DomainException>(() => Story.Rehydrate(Guid.Empty, Details(), recording, DateTimeOffset.UtcNow));
         Assert.Throws<DomainException>(() => Story.Rehydrate(Guid.NewGuid(), Details(), recording, default));
-        Assert.Throws<ArgumentNullException>(() => Story.Upload(null!, recording, true));
-        Assert.Throws<ArgumentNullException>(() => Story.Upload(Details(), null!, true));
+        Assert.Throws<ArgumentNullException>(() => Story.Upload(null!, recording, true, TestOwner.Id));
+        Assert.Throws<ArgumentNullException>(() => Story.Upload(Details(), null!, true, TestOwner.Id));
     }
 }

@@ -9,7 +9,7 @@ public sealed class TranslationVoiceRepositoryTests(PostgresFixture fixture) : I
     {
         // Arrange
         var repository = new StoryRepository(fixture.DataSource);
-        Story story = Story.Upload(new StoryDetails("Voice test", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("Voice test", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         await repository.AddAsync(story, CancellationToken.None);
         try
         {
@@ -50,7 +50,7 @@ public sealed class TranslationVoiceRepositoryTests(PostgresFixture fixture) : I
     {
         // Arrange
         var repository = new StoryRepository(fixture.DataSource);
-        Story story = Story.Upload(new StoryDetails("Voice read test", "Artist", "Shona", "ZW", "poem", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("Voice read test", "Artist", "Shona", "ZW", "poem", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         await repository.AddAsync(story, CancellationToken.None);
         try
         {
@@ -77,7 +77,7 @@ public sealed class TranslationVoiceRepositoryTests(PostgresFixture fixture) : I
     {
         // Arrange
         var repository = new StoryRepository(fixture.DataSource);
-        Story story = Story.Upload(new StoryDetails("Voice race test", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("Voice race test", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         await repository.AddAsync(story, CancellationToken.None);
         try
         {
