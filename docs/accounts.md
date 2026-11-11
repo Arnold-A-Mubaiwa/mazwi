@@ -46,5 +46,5 @@ It prints how many stories it claimed and only claims stories that have no owner
 - Password reset and email verification arrived in issue #47 (docs/password-reset.md). Emails go to a local `.eml` outbox until a real provider is added.
 - Account deletion (issue #46, docs/artist-control.md) deletes the artist and every story they own.
 - The local app and tests used to share the `_tests` database; issue #45 separated them (docs/databases.md).
-- **Behind the Next.js proxy every request reaches the API from 127.0.0.1**, so the sign-in rate limit is one shared bucket for the whole site. Next passes a client-sent `X-Forwarded-For` through unchanged, so it cannot be trusted. Before hosting, put a trusted reverse proxy in front that sets forwarded headers, and enable `UseForwardedHeaders` for it.
-- For the same reason the API never sees HTTPS, so the cookie is not marked `Secure` yet. That also needs the trusted proxy before hosting.
+- **Locally**, every request reaches the API from 127.0.0.1 through Next.js, so the sign-in limit is shared. When hosted (#48, docs/hosting.md), Caddy sets the real visitor address and the API trusts it only from Next.js, so the limit applies per visitor.
+- When hosted, the cookie is always `Secure` and HSTS is sent (docs/hosting.md).
