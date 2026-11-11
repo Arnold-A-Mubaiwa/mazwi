@@ -1,0 +1,11 @@
+{
+  "name": "mazwi-voice-stamp-check",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "sherpa-onnx-node": "2.0.1"
+  }
+}
