@@ -36,6 +36,17 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     };
 });
 builder.Services.AddAuthorization();
+// Hosted behind a reverse proxy: the cookie is always Secure, and only listed proxies may set the client address and scheme.
+builder.Services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)
+    .Configure<IConfiguration>((options, configuration) =>
+    {
+        if (configuration.GetValue("Mazwi:Hosted", false))
+        {
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        }
+    });
+builder.Services.AddOptions<ForwardedHeadersOptions>().Configure<IConfiguration>((options, configuration) => HostingSettings.From(configuration).Apply(options));
+builder.Services.AddHsts(options => options.MaxAge = TimeSpan.FromDays(365));
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -112,6 +123,17 @@ builder.Services.AddSingleton<IStoryMediaStore>(_ => new LocalStoryMediaStore(
     builder.Configuration["MediaStorage:Root"] ?? Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "../../.local/media"))));
 
 WebApplication app = builder.Build();
+HostingSettings hosting = HostingSettings.From(app.Configuration);
+if (hosting.TrustedProxies.Count > 0)
+{
+    app.UseForwardedHeaders();
+}
+
+if (hosting.Hosted)
+{
+    app.UseHsts();
+}
+
 app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
