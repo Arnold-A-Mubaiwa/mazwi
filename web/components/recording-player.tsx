@@ -2,18 +2,28 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cueAt, type SubtitleCue } from "@/lib/subtitles";
+import { createPlayTracker } from "@/lib/plays";
 
 type Props = {
   src: string; extension: string; label: string;
   // Timed lines for exactly this recording; shown under the player as it plays.
   cues?: SubtitleCue[] | null; subtitlesUrl?: string | null; subtitleLanguage?: string;
   onTime?: (milliseconds: number) => void; mediaRef?: (element: HTMLMediaElement | null) => void;
+  // Called once after three seconds of real listening.
+  onPlayed?: () => void;
 };
 
-export function RecordingPlayer({ src, extension, label, cues, subtitlesUrl, subtitleLanguage, onTime, mediaRef }: Props) {
+export function RecordingPlayer({ src, extension, label, cues, subtitlesUrl, subtitleLanguage, onTime, mediaRef, onPlayed }: Props) {
   const [failed, setFailed] = useState(false);
   const [now, setNow] = useState(0);
   const player = useRef<HTMLMediaElement | null>(null);
+  const played = useRef(onPlayed);
+  useEffect(() => { played.current = onPlayed; }, [onPlayed]);
+  const tracker = useRef<ReturnType<typeof createPlayTracker> | null>(null);
+  const track = (milliseconds: number, playing: boolean) => {
+    tracker.current ??= createPlayTracker(() => played.current?.());
+    tracker.current.update(milliseconds, playing);
+  };
   useEffect(() => {
     const element = player.current;
     return () => { element?.pause(); element?.removeAttribute("src"); element?.load(); };
@@ -23,6 +33,7 @@ export function RecordingPlayer({ src, extension, label, cues, subtitlesUrl, sub
     const milliseconds = Math.round(event.currentTarget.currentTime * 1000);
     setNow(milliseconds);
     onTime?.(milliseconds);
+    track(milliseconds, !event.currentTarget.paused);
   };
   const cue = cueAt(cues, now);
   return <div className="recording-player">

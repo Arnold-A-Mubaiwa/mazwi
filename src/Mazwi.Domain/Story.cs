@@ -261,6 +261,19 @@ public sealed class Story
         return new(translation.Language, Details.Language, translation.Text, Id, Recording, SpeakerChecked: translation.SpeakerChecked, Cues: cues);
     }
 
+    // A play counts only for the approved version the viewer was shown; it is credited to the language they read.
+    // Returns null for an unapproved story, an unsupported language or a version that has since changed.
+    public StoryPlay? RecordPlay(string language, Guid version, DateOnly day)
+    {
+        if (!StoryDetails.SupportsLanguage(language) || version != ReviewVersion)
+        {
+            return null;
+        }
+
+        ApprovedStoryVersion? approved = SelectApprovedVersion(language);
+        return approved is null ? null : new StoryPlay(Id, approved.TextLanguage, day);
+    }
+
     private IReadOnlyList<SubtitleCue>? CuesFor(string language, StoryText text) =>
         _timings.TryGetValue(language, out SubtitleTiming? timing) ? timing.Cues(text) : null;
 

@@ -45,6 +45,15 @@ builder.Services.AddRateLimiter(options =>
             Window = TimeSpan.FromMinutes(1),
             QueueLimit = 0,
         }));
+    // Per story, so one busy story cannot block counting for the rest of the site.
+    options.AddPolicy(PlayLimits.Policy, context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Request.RouteValues["id"]?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = context.RequestServices.GetRequiredService<IConfiguration>().GetValue("Mazwi:PlaysPerStoryPerMinute", 120),
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+        }));
 });
 builder.Services.AddSingleton(_ =>
 {
@@ -84,6 +93,9 @@ builder.Services.AddScoped<IStoryReviewService, StoryReviewService>();
 builder.Services.AddScoped<IStoryFeedService, StoryFeedService>();
 builder.Services.AddScoped<IStoryStudioService, StoryStudioService>();
 builder.Services.AddScoped<IStorySubtitleService, StorySubtitleService>();
+builder.Services.AddScoped<IStoryPlayRepository, StoryPlayRepository>();
+builder.Services.AddScoped<IStoryStatsService, StoryStatsService>();
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IStoryMediaStore>(_ => new LocalStoryMediaStore(
     builder.Configuration["MediaStorage:Root"] ?? Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "../../.local/media"))));
 

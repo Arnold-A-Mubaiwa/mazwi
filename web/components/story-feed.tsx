@@ -7,9 +7,13 @@ import { usePreferredLanguage } from "./language-picker";
 import { RecordingPlayer } from "./recording-player";
 import { DubbedPlayer } from "./dubbed-player";
 import { canDub, dubbedLabel } from "@/lib/dubbing";
+import { recordPlay } from "@/lib/plays";
 
 function StoryCard({ story, preferred }: { story: ViewerStory; preferred: ReturnType<typeof usePreferredLanguage> }) {
   const [original, setOriginal] = useState(false);
+  // One play per story card, whichever player the viewer uses.
+  const counted = useRef(false);
+  const played = () => { if (!counted.current) { counted.current = true; void recordPlay(story.id, story.textLanguage, story.reviewVersion); } };
   const originalUrl = `/api/feed/${story.id}/recording?language=${story.textLanguage}&version=${story.reviewVersion}&originalAudio=true`;
   const dub = !original && canDub(story);
   const mediaUrl = original
@@ -20,9 +24,9 @@ function StoryCard({ story, preferred }: { story: ViewerStory; preferred: Return
     <h3><Link href={`/story/${story.id}`}>{story.title}</Link></h3>
     <p className="viewer-credit">{story.artistName} · {story.community} · {story.country}</p>
     <p className="viewer-note">{viewingNote(story, preferred)}</p>
-    {dub ? <DubbedPlayer key={`dub-${mediaUrl}`} videoSrc={originalUrl} voiceSrc={story.mediaUrl} label={dubbedLabel(story)} cues={story.cues} subtitlesUrl={story.subtitlesUrl} language={story.textLanguage} />
+    {dub ? <DubbedPlayer key={`dub-${mediaUrl}`} videoSrc={originalUrl} voiceSrc={story.mediaUrl} label={dubbedLabel(story)} cues={story.cues} subtitlesUrl={story.subtitlesUrl} language={story.textLanguage} onPlayed={played} />
     : <RecordingPlayer key={mediaUrl} src={mediaUrl} extension={original ? (story.originalRecordingExtension ?? ".mp4") : story.recordingExtension} label={original ? `Original ${languageName(story.originalLanguage)} audio` : playbackLabel(story)}
-      cues={original ? null : story.cues} subtitlesUrl={original ? null : story.subtitlesUrl} subtitleLanguage={story.textLanguage} />}
+      cues={original ? null : story.cues} subtitlesUrl={original ? null : story.subtitlesUrl} subtitleLanguage={story.textLanguage} onPlayed={played} />}
     {story.audioLanguage !== story.originalLanguage && <button className="text-control" onClick={() => setOriginal(value => !value)}>{canDub(story) ? (original ? "Watch dubbed" : "Watch with original sound") : original ? "Hear translated recording" : "Hear original"}</button>}
     <div className="viewer-text" lang={story.textLanguage}><p className="eyebrow">APPROVED WORDS / {languageName(story.textLanguage).toUpperCase()}</p><p>{story.text}</p></div>
     <p className="viewer-languages">Approved in: {story.availableLanguages.map(languageName).join(" · ")}</p>
