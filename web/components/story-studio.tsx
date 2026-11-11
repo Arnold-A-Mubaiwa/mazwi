@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { getStudio, type StudioPage } from "@/lib/studio";
 import { languageName } from "@/lib/feed";
 import { getStudioStats, playsSummary, type StoryStats } from "@/lib/plays";
+import { getVersionRequests, requestsSummary, type VersionRequestTotal } from "@/lib/twins";
 
 export function StoryStudio() {
   const [offset, setOffset] = useState(0);
@@ -12,9 +13,11 @@ export function StoryStudio() {
   const [filter, setFilter] = useState("");
   const [state, setState] = useState<{ offset: number; page?: StudioPage; error?: string } | null>(null);
   const [stats, setStats] = useState<Map<string, StoryStats> | null>(null);
+  const [requests, setRequests] = useState<VersionRequestTotal[]>([]);
   useEffect(() => {
     const controller = new AbortController();
     getStudioStats(controller.signal).then(setStats).catch(() => { if (!controller.signal.aborted) setStats(null); });
+    getVersionRequests(controller.signal).then(setRequests).catch(() => { if (!controller.signal.aborted) setRequests([]); });
     return () => controller.abort();
   }, [retry]);
   useEffect(() => {
@@ -38,6 +41,7 @@ export function StoryStudio() {
       <Link className="text-link" href={`/story/${story.id}/review`}>Edit and approve ↗</Link>
       {story.status === "published" ? <p><Link className="text-link" href={`/story/${story.id}`}>Watch story ↗</Link></p> : <p className="studio-private">Not in the viewer feed.</p>}
       {story.status === "published" && stats && <p className="studio-plays" data-testid="studio-plays">{playsSummary(stats.get(story.id), languageName)}</p>}
+      {requests.some(request => request.storyId === story.id) && <p className="studio-plays" data-testid="studio-requests">{requestsSummary(requests.filter(request => request.storyId === story.id))}</p>}
     </article>)}</div>
     <nav className="viewer-navigation" aria-label="Studio pages"><button disabled={offset === 0} onClick={() => { setFilter(""); setOffset(value => Math.max(0, value - 20)); }}>Previous page</button><span>Page {Math.floor(offset / 20) + 1}</span><button disabled={page.nextOffset === null} onClick={() => { setFilter(""); setOffset(page.nextOffset!); }}>Next page</button></nav>
     <button className="text-control" onClick={() => setRetry(value => value + 1)}>Refresh studio</button>

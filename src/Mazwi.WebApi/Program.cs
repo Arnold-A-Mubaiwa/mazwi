@@ -69,6 +69,14 @@ builder.Services.AddRateLimiter(options =>
             Window = TimeSpan.FromMinutes(1),
             QueueLimit = 0,
         }));
+    options.AddPolicy(VersionRequestLimits.Policy, context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "local",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = context.RequestServices.GetRequiredService<IConfiguration>().GetValue("Mazwi:VersionRequestsPerMinute", 10),
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+        }));
     // Per story, so one busy story cannot block counting for the rest of the site.
     options.AddPolicy(PlayLimits.Policy, context => RateLimitPartition.GetFixedWindowLimiter(
         context.Request.RouteValues["id"]?.ToString() ?? "unknown",
@@ -124,6 +132,8 @@ builder.Services.AddSingleton<IStoryFingerprinter>(services =>
 builder.Services.AddScoped<IStoryTwinRepository, StoryTwinRepository>();
 builder.Services.AddScoped<IStoryTwinService, StoryTwinService>();
 builder.Services.AddHostedService<StoryTwinSweeper>();
+builder.Services.AddScoped<IStoryVersionRequestRepository, StoryVersionRequestRepository>();
+builder.Services.AddScoped<IStoryVersionRequestService, StoryVersionRequestService>();
 builder.Services.AddScoped<IStoryReviewService, StoryReviewService>();
 builder.Services.AddSingleton<ILanguageService, LanguageService>();
 builder.Services.AddScoped<IStoryFeedService, StoryFeedService>();

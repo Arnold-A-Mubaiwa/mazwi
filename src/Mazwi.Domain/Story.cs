@@ -270,6 +270,29 @@ public sealed class Story
         return new(translation.Language, Details.Language, translation.Text, Id, Recording, SpeakerChecked: translation.SpeakerChecked, Cues: cues);
     }
 
+    /// <summary>Viewers can watch this story in the language with its words approved by the artist.</summary>
+    public bool IsApprovedIn(string language) =>
+        CanBeReported && (language == Details.Language || Translations.Any(draft => draft.Language == language && draft.IsApproved));
+
+    /// <summary>Viewers may ask for a version in a supported language the story is not yet approved in.</summary>
+    public void EnsureVersionCanBeRequested(string language)
+    {
+        if (!StoryDetails.SupportsLanguage(language))
+        {
+            throw new DomainException("Choose one of the languages Mazwi supports.");
+        }
+
+        if (!CanBeReported)
+        {
+            throw new DomainException("Only published stories can be asked for in another language.");
+        }
+
+        if (IsApprovedIn(language))
+        {
+            throw new DomainException("This story is already available in that language.");
+        }
+    }
+
     public void HideForReview() => HiddenForReview = true;
 
     public void RestoreAfterReview() => HiddenForReview = false;

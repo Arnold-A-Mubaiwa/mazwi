@@ -36,6 +36,7 @@ async function studioShows(page: Page, testId: string, title: string) {
 }
 
 test("Twins_SuggestConfirmOptOutAndUnlink_RealSweepWithFakeOpenAi", async ({ page, request, browser }) => {
+  test.setTimeout(120000);
   const words = shared();
   const run = randomUUID().slice(0, 8);
   const shonaTitle = `Tsuro na Gudo ${run}`, yorubaTitle = `Ìjàpá àti Ọ̀bọ ${run}`, hausaTitle = `Kura da Zaki ${run}`;

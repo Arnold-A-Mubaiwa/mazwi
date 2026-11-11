@@ -4,7 +4,8 @@ test("Home_NavigationAndPreference_WorksAfterReload", async ({ page }) => {
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Every African story/ })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /first voices/ })).toBeVisible();
+  // Other specs may have stories published at this moment (the shared test database), so either state is fine.
+  await expect(page.getByRole("heading", { name: /first voices/ }).or(page.getByRole("article", { name: "Story player" }))).toBeVisible();
   await expect(page.getByRole("link", { name: "Upload", exact: true })).toHaveAttribute("href", "/upload");
   await page.getByRole("combobox", { name: "Your language", exact: true }).selectOption("xh");
   await expect(page.getByText("Molo. Make yourself at home.")).toBeVisible();

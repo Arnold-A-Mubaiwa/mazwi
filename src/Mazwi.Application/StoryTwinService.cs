@@ -49,6 +49,28 @@ public sealed class StoryTwinService(IStoryTwinRepository twins, IStoryRepositor
     public Task<bool> RejectAsync(Guid storyId, Guid twinStoryId, CancellationToken cancellationToken) =>
         ChangeAsync(storyId, twinStoryId, twin => twin.Reject(), cancellationToken);
 
+    public async Task<IReadOnlyList<ViewerTwinDto>?> ListForViewerAsync(Guid storyId, string language, CancellationToken cancellationToken)
+    {
+        StoryLanguages.Get(language);
+        Story? story = await stories.GetAsync(storyId, cancellationToken);
+        if (story is null || !story.CanBeReported)
+        {
+            return null;
+        }
+
+        var result = new List<ViewerTwinDto>();
+        foreach (Guid twinId in await twins.ListConfirmedTwinIdsAsync(storyId, cancellationToken))
+        {
+            if (await stories.GetAsync(twinId, cancellationToken) is Story twin && twin.CanBeTwinned)
+            {
+                result.Add(new ViewerTwinDto(twin.Id, twin.Details.Title, twin.Details.ArtistName, twin.Details.Community, twin.Details.Language,
+                    twin.IsApprovedIn(language)));
+            }
+        }
+
+        return result;
+    }
+
     public async Task<StoryDraftDto?> SetTwinsAllowedAsync(Guid storyId, bool allowed, CancellationToken cancellationToken)
     {
         Story? story = await stories.GetAsync(storyId, cancellationToken);
