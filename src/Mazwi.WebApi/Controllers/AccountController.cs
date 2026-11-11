@@ -69,5 +69,5 @@ public sealed class AccountController(IArtistAccountService service) : Controlle
     }
 
     private Task SignInCookieAsync(ArtistDto artist) => HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
-        ArtistClaims.For(artist.Id, artist.Email, CookieAuthenticationDefaults.AuthenticationScheme));
+        ArtistClaims.For(artist.Id, artist.Email, CookieAuthenticationDefaults.AuthenticationScheme, artist.SecurityStamp));
 }
