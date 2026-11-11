@@ -4,7 +4,7 @@ Issue #36 shows each artist how often their approved stories are played, without
 
 ## What counts
 
-- A play is counted once a viewer has actually listened or watched for 3 seconds. Seeking forward, pausing and rewinding do not add time.
+- A play is counted once a viewer has actually listened or watched for 3 seconds, or has listened through to the end of a shorter recording (at least 1 second heard). Seeking forward, pausing and rewinding do not add time.
 - A story card counts once, whichever player or toggle the viewer uses.
 - Only approved, current versions count. Plays of unpublished stories, unknown stories or a version that changed since the page loaded are ignored (404).
 - A play is credited to the language the viewer read. A viewer who chose isiXhosa but was shown the approved Shona original counts as Shona.

@@ -14,6 +14,7 @@ SDK 10.0.402 is pinned in global.json. Quality tooling also uses Node.js.
 - Install: `dotnet restore Mazwi.sln --configfile NuGet.Config`
 - Run: `./scripts/Start-Mazwi.ps1` (loads ignored .env, builds, migrates and checks local readiness).
 - Stop: `./scripts/Stop-Mazwi.ps1` before builds or quality/browser checks; only helper-managed processes are stopped.
+- Claim stories saved before accounts (once, after signing up): `./scripts/Claim-Stories.ps1 -Email <your account email>`.
 - Build: `dotnet build`
 - Lint: `dotnet format --verify-no-changes`
 - Test: `dotnet test`
@@ -30,6 +31,7 @@ Repository/full-stack API tests currently require MAZWI_TEST_CONNECTION_STRING f
 Local PostgreSQL is the current user-approved default. The owner temporarily approved sharing the dedicated _tests database with the local app; separate development storage later. Testcontainers/Docker remain optional future work.
 Secrets belong in ignored .env/appsettings.Development.json or user-secrets, never tracked files.
 The quality helper loads .env and uses repository-local .local caches. Missing credentials are failures, not skipped/passing tests.
+Browser tests also need MAZWI_E2E_ARTIST_PASSWORD and MAZWI_E2E_OTHER_ARTIST_PASSWORD in .env (stable local fixture accounts).
 
 ## 3. Architecture and coding standards
 
