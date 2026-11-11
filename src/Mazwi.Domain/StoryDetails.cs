@@ -29,11 +29,11 @@ public sealed record StoryDetails
 
         if (!SupportsLanguage(Language))
         {
-            throw new DomainException("Choose Shona, isiXhosa, Swahili, or English.");
+            throw new DomainException("Choose one of the languages Mazwi supports.");
         }
     }
 
-    public static bool SupportsLanguage(string language) => language is "sn" or "xh" or "sw" or "en";
+    public static bool SupportsLanguage(string language) => StoryLanguages.IsSupported(language);
 
     private static string Required(string? value, string name, int maximum)
     {
