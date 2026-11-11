@@ -210,3 +210,10 @@ h3 { font-size: 35px; line-height: 1.14; letter-spacing: -1px; margin: 0 0 15px;
 .share-story { margin-top: 18px; }
 .share-message { font-size: 13px; color: var(--green); overflow-wrap: anywhere; }
 .shared-recording { font-size: 13px; color: var(--green); }
+.story-removal { margin-top: 32px; border-color: #5a3a2a; }
+.story-removal fieldset { border: 0; padding: 0; margin: 20px 0 0; min-width: 0; }
+.story-removal legend { font-weight: 600; margin-bottom: 8px; }
+.story-removal input { width: 100%; font: inherit; color: var(--paper); background: #22261d; border: 1px solid #414735; border-radius: 4px; padding: 12px; margin-top: 8px; }
+.danger-button { background: #b4533a; color: var(--paper); }
+.danger-button:disabled { opacity: 0.5; cursor: not-allowed; }
+.account-email { color: var(--muted); }

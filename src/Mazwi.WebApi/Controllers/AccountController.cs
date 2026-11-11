@@ -52,6 +52,22 @@ public sealed class AccountController(IArtistAccountService service) : Controlle
         return artist is null ? Unauthorized() : Ok(ArtistResponse.From(artist));
     }
 
+    // Permanent: deletes the account and every story it owns, with all recordings. The password must be entered again.
+    [HttpPost("delete")]
+    [Authorize]
+    [EnableRateLimiting(AccountLimits.Policy)]
+    public async Task<IActionResult> Delete(DeleteAccountRequest request, [FromServices] IAccountDeletionService deletion, CancellationToken cancellationToken)
+    {
+        AccountDeletion result = await deletion.DeleteAsync(User.ArtistId(), request.Password, cancellationToken);
+        if (result == AccountDeletion.WrongPassword)
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, title: "Password did not match.", detail: "Enter your current password to delete your account.");
+        }
+
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return result == AccountDeletion.Deleted ? NoContent() : Unauthorized();
+    }
+
     private Task SignInCookieAsync(ArtistDto artist) => HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
         ArtistClaims.For(artist.Id, artist.Email, CookieAuthenticationDefaults.AuthenticationScheme));
 }

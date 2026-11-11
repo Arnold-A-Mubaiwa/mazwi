@@ -96,6 +96,8 @@ builder.Services.AddScoped<IStoryStudioService, StoryStudioService>();
 builder.Services.AddScoped<IStorySubtitleService, StorySubtitleService>();
 builder.Services.AddScoped<IStoryPlayRepository, StoryPlayRepository>();
 builder.Services.AddScoped<IStoryStatsService, StoryStatsService>();
+builder.Services.AddScoped<IStoryRemovalService, StoryRemovalService>();
+builder.Services.AddScoped<IAccountDeletionService, AccountDeletionService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IStoryMediaStore>(_ => new LocalStoryMediaStore(
     builder.Configuration["MediaStorage:Root"] ?? Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "../../.local/media"))));

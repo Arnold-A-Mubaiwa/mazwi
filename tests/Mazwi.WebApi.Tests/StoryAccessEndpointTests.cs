@@ -25,6 +25,8 @@ public sealed class StoryAccessEndpointTests
         { "POST", $"/api/stories/{StoryId}/approvals/sn" },
         { "GET", $"/api/stories/{StoryId}/recordings/sn" },
         { "PUT", $"/api/stories/{StoryId}/subtitles/sn" },
+        { "POST", $"/api/stories/{StoryId}/unpublish" },
+        { "DELETE", $"/api/stories/{StoryId}?version={Guid.NewGuid()}" },
     };
 
     private static WebApplicationFactory<Program> Factory(StoryAccess access, IStoryStudioService? studio = null) =>
