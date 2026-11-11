@@ -158,6 +158,7 @@ export function StoryDraftEditor({ id }: { id: string }) {
 
   return <>
     <div className="draft-story-heading"><div><h2>{draft.title}</h2><p>By {draft.artistName} · Original language: {originalLanguage}</p></div><span className="draft-badge">{draft.originalApproved ? "Original approved" : "Unpublished"}</span></div>
+    {draft.hiddenForReview && <p className="upload-error" role="note">Mazwi moderators have hidden this story from the feed while they review a report. Approving it again will not bring it back until they restore it.</p>}
     <p className="draft-return-note"><Link className="text-link" href="/studio">Back to your studio ↗</Link> · Keep a copy of any unsaved text before leaving the page.</p>
     <div className="draft-grid">
       <section className="draft-card" aria-labelledby="original-heading">

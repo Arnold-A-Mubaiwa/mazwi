@@ -6,7 +6,7 @@ export const MAX_VOICE_TEXT = 1_800;
 export type TranslationDraft = { language: LanguageCode; text: string; status: "draft" | "approved"; recordingId?: string | null; recordingExtension?: string | null; notes?: string[] | null; recordingVoice?: "standard" | "clone" | null; speakerChecked?: boolean; timing?: SubtitleTiming | null };
 export type StoryDraft = {
   id: string; title: string; artistName: string; language: LanguageCode; status: "unpublished" | "published";
-  reviewVersion: string; originalApproved: boolean; recordingExtension: string;
+  reviewVersion: string; originalApproved: boolean; recordingExtension: string; hiddenForReview?: boolean;
   transcript: string | null; translations: TranslationDraft[]; originalTiming?: SubtitleTiming | null;
 };
 

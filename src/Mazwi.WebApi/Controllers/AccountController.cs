@@ -45,11 +45,11 @@ public sealed class AccountController(IArtistAccountService service) : Controlle
 
     [HttpGet("me")]
     [Authorize]
-    public async Task<ActionResult<ArtistResponse>> Me(CancellationToken cancellationToken)
+    public async Task<ActionResult<ArtistResponse>> Me([FromServices] IConfiguration configuration, CancellationToken cancellationToken)
     {
         ArtistDto? artist = await service.GetAsync(User.ArtistId(), cancellationToken);
         Response.Headers.CacheControl = "no-store";
-        return artist is null ? Unauthorized() : Ok(ArtistResponse.From(artist));
+        return artist is null ? Unauthorized() : Ok(ArtistResponse.From(artist, artist.EmailVerified && ModeratorHandler.IsListed(configuration, artist.Email)));
     }
 
     // Permanent: deletes the account and every story it owns, with all recordings. The password must be entered again.

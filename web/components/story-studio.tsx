@@ -33,7 +33,7 @@ export function StoryStudio() {
     {!page.items.length && <div className="empty-stories"><h2>Your first story starts here.</h2><p>Upload a recording, add its words and review each language before sharing.</p></div>}
     {!!page.items.length && !stories.length && <p>No matching stories on this page. Clear the filter or try the next page.</p>}
     <div className="studio-grid">{stories.map(story => <article className="studio-card" key={story.id}>
-      <span className="draft-badge">{story.status === "published" ? "Original approved" : "Unpublished"}</span>
+      <span className="draft-badge">{story.hiddenForReview ? "Hidden for review" : story.status === "published" ? "Original approved" : "Unpublished"}</span>
       <h2>{story.title}</h2><p>{story.artistName} · {story.community}</p><p>Original language: {languageName(story.language)}</p>
       <Link className="text-link" href={`/story/${story.id}/review`}>Edit and approve ↗</Link>
       {story.status === "published" ? <p><Link className="text-link" href={`/story/${story.id}`}>Watch story ↗</Link></p> : <p className="studio-private">Not in the viewer feed.</p>}
