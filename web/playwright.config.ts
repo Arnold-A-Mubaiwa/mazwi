@@ -13,6 +13,7 @@ export default defineConfig({
     { name: "browser", dependencies: ["setup"], use: { storageState: authFile } },
   ],
   webServer: [
+    { command: "node e2e/fake-openai.mjs", url: "http://127.0.0.1:5099/", reuseExistingServer: false, timeout: 30000 },
     {
       command: "dotnet run --project ../src/Mazwi.WebApi --no-launch-profile --no-build --urls http://127.0.0.1:5046",
       url: "http://127.0.0.1:5046/api/health", reuseExistingServer: false, timeout: 120000,
@@ -26,6 +27,9 @@ export default defineConfig({
         // The second fixture artist moderates in the browser tests (its email is confirmed by auth.setup.ts).
         Mazwi__Moderators: "e2e-other-artist@mazwi.test",
         Mazwi__AccountRequestsPerMinute: "1000",
+        // Story Twins run for real against the local fake OpenAI in e2e/fake-openai.mjs (honoured only in Testing, on loopback).
+        Mazwi__Twins__Enabled: "true", Mazwi__Twins__ApiKey: "fake-key", Mazwi__Twins__OpenAiBaseUrl: "http://127.0.0.1:5099",
+        Mazwi__Twins__SweepSeconds: "1", Mazwi__Twins__Threshold: "0.85",
       },
     },
     {

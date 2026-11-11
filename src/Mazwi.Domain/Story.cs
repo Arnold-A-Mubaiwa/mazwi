@@ -16,6 +16,12 @@ public sealed class Story
     // Set by moderators after a report: the story leaves the feed until restored, whatever its approvals say.
     public bool HiddenForReview { get; private set; }
     public bool CanBeReported => OriginalApproved && !HiddenForReview;
+
+    /// <summary>False when the artist opted this story out of Story Twins. Stories take part by default.</summary>
+    public bool TwinsAllowed { get; private set; } = true;
+
+    /// <summary>Can be matched with or shown as a twin: published, owned, not hidden and not opted out.</summary>
+    public bool CanBeTwinned => OriginalApproved && !HiddenForReview && TwinsAllowed && OwnerId is not null;
     public StoryText? Transcript { get; private set; }
     public IReadOnlyCollection<TranslationDraft> Translations => _translations.Values.ToArray();
     public IReadOnlyDictionary<string, SubtitleTiming> SubtitleTimings => new Dictionary<string, SubtitleTiming>(_timings, StringComparer.Ordinal);
@@ -268,6 +274,8 @@ public sealed class Story
 
     public void RestoreAfterReview() => HiddenForReview = false;
 
+    public void AllowTwins(bool allowed) => TwinsAllowed = allowed;
+
     // Takes the story out of the feed by removing every approval. The artist can approve again later.
     public void Unpublish(Guid expectedVersion)
     {
@@ -340,7 +348,7 @@ public sealed class Story
 
     public static Story Rehydrate(Guid id, StoryDetails details, StoryRecording recording, DateTimeOffset permissionRecordedAt,
         string? transcript = null, IEnumerable<TranslationDraft>? translations = null, Guid? reviewVersion = null, bool originalApproved = false,
-        Guid? ownerId = null, IEnumerable<KeyValuePair<string, SubtitleTiming>>? timings = null, bool hiddenForReview = false)
+        Guid? ownerId = null, IEnumerable<KeyValuePair<string, SubtitleTiming>>? timings = null, bool hiddenForReview = false, bool twinsAllowed = true)
     {
         var story = new Story(id, details, recording, permissionRecordedAt, ownerId);
         if (transcript is not null)
@@ -377,6 +385,7 @@ public sealed class Story
 
         story.OriginalApproved = originalApproved;
         story.HiddenForReview = hiddenForReview;
+        story.TwinsAllowed = twinsAllowed;
         story.ReviewVersion = reviewVersion ?? Guid.NewGuid();
         if (story.ReviewVersion == Guid.Empty)
         {
