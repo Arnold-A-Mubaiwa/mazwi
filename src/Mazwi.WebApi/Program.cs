@@ -113,6 +113,17 @@ builder.Services.AddSingleton<ITranscriber>(services => new OpenAiTranscriber(
     services.GetRequiredService<HttpClient>(), builder.Configuration["OPENAI_API_KEY"],
     builder.Configuration["MAZWI_TRANSCRIPTION_MODEL"] ?? "gpt-transcribe"));
 builder.Services.AddScoped<IStoryTranscriptService, StoryTranscriptService>();
+// Story Twins: settings are read when first needed, so test configuration applies.
+builder.Services.AddSingleton(services => TwinSettings.From(services.GetRequiredService<IConfiguration>(), services.GetRequiredService<IHostEnvironment>()));
+builder.Services.AddSingleton(services => services.GetRequiredService<TwinSettings>().Threshold);
+builder.Services.AddSingleton<IStoryFingerprinter>(services =>
+{
+    TwinSettings twins = services.GetRequiredService<TwinSettings>();
+    return new OpenAiStoryFingerprinter(services.GetRequiredService<HttpClient>(), twins.ApiKey, twins.GistModel, twins.EmbeddingModel, twins.BaseUri);
+});
+builder.Services.AddScoped<IStoryTwinRepository, StoryTwinRepository>();
+builder.Services.AddScoped<IStoryTwinService, StoryTwinService>();
+builder.Services.AddHostedService<StoryTwinSweeper>();
 builder.Services.AddScoped<IStoryReviewService, StoryReviewService>();
 builder.Services.AddSingleton<ILanguageService, LanguageService>();
 builder.Services.AddScoped<IStoryFeedService, StoryFeedService>();

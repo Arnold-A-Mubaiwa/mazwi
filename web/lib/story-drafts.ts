@@ -6,7 +6,7 @@ export const MAX_VOICE_TEXT = 1_800;
 export type TranslationDraft = { language: LanguageCode; text: string; status: "draft" | "approved"; recordingId?: string | null; recordingExtension?: string | null; notes?: string[] | null; recordingVoice?: "standard" | "clone" | null; speakerChecked?: boolean; timing?: SubtitleTiming | null };
 export type StoryDraft = {
   id: string; title: string; artistName: string; language: LanguageCode; status: "unpublished" | "published";
-  reviewVersion: string; originalApproved: boolean; recordingExtension: string; hiddenForReview?: boolean;
+  reviewVersion: string; originalApproved: boolean; recordingExtension: string; hiddenForReview?: boolean; twinsAllowed?: boolean;
   transcript: string | null; translations: TranslationDraft[]; originalTiming?: SubtitleTiming | null;
 };
 
@@ -58,7 +58,8 @@ export async function readDraft(response: Response, id: string): Promise<StoryDr
     || !["unpublished", "published"].includes(draft.status) || typeof draft.reviewVersion !== "string"
     || typeof draft.originalApproved !== "boolean" || typeof draft.recordingExtension !== "string"
     || (draft.transcript !== null && typeof draft.transcript !== "string")
-    || !Array.isArray(draft.translations) || !draft.translations.every(isTranslation) || !isTimingValue(draft.originalTiming)) {
+    || !Array.isArray(draft.translations) || !draft.translations.every(isTranslation) || !isTimingValue(draft.originalTiming)
+    || (draft.twinsAllowed != null && typeof draft.twinsAllowed !== "boolean")) {
     throw new Error("The API returned an unexpected story. Your edits have not been confirmed saved.");
   }
   return draft;

@@ -9,6 +9,7 @@ import { recordingError } from "@/lib/stories";
 import { RecordingPlayer } from "./recording-player";
 import { SubtitleTimer } from "./subtitle-timer";
 import { StoryRemoval } from "./story-removal";
+import { setTwinsAllowed } from "@/lib/twins";
 
 export function StoryDraftEditor({ id }: { id: string }) {
   const [draft, setDraft] = useState<StoryDraft | null>(null);
@@ -129,6 +130,16 @@ export function StoryDraftEditor({ id }: { id: string }) {
     finally { setBusy(false); }
   }
 
+  async function changeTwins(allowed: boolean) {
+    setBusy(true); setSaveError(null); setMessage("");
+    saving.current = new AbortController();
+    try {
+      setDraft(await setTwinsAllowed(id, allowed, saving.current.signal));
+      setMessage(allowed ? "Mazwi may suggest Story Twins for this story." : "Story Twins are off for this story. Existing twins are hidden.");
+    } catch (failure) { setSaveError(failure instanceof Error ? failure.message : "That did not work. Please try again."); }
+    finally { setBusy(false); }
+  }
+
   async function uploadRecording(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!draft) return;
@@ -239,6 +250,11 @@ export function StoryDraftEditor({ id }: { id: string }) {
         </div>}
       </section>
     </div>
+    {FEATURES.storyTwins && <section className="draft-card twin-preference" aria-labelledby="twin-preference-heading">
+      <p className="eyebrow">STORY TWINS</p><h2 id="twin-preference-heading">The same story in other languages.</h2>
+      <label className="permission-field"><input type="checkbox" checked={draft.twinsAllowed !== false} disabled={busy || unsaved} onChange={event => void changeTwins(event.target.checked)} /> Let Mazwi suggest twins for this story</label>
+      <p className="draft-notice">After you approve the original, Mazwi uses AI to make a private English summary of your words and compares it with stories by other artists in other languages. Suggestions appear in your studio. Nothing is shown to viewers until an artist confirms it. Turning this off also hides existing twins.</p>
+    </section>}
     <StoryRemoval key={`removal-${draft.reviewVersion}`} draft={draft} disabled={busy || unsaved} onChanged={(updated, text) => { setDraft(updated); setSaveError(null); setMessage(text); }} onError={setSaveError} />
     {busy && <p className="draft-feedback" role="status">{aiPending === "voice" ? "Generating an AI voice…" : aiPending === "transcript" ? "Transcribing the original recording…" : aiPending ? "Creating an AI translation draft…" : "Saving your words…"}</p>}
     {message && <p className="draft-feedback" role="status">{message}</p>}
