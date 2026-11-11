@@ -93,6 +93,44 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
         await transaction.CommitAsync(cancellationToken);
     }
 
+    public async Task SaveUnpublishAsync(Story story, Guid expectedVersion, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(story);
+        await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using NpgsqlTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+        if (await LockAsync(connection, transaction, story.Id, cancellationToken) != expectedVersion)
+        {
+            throw new StoryConflictException();
+        }
+
+        await connection.ExecuteAsync(new CommandDefinition("DELETE FROM story_approvals WHERE story_id = @Id", new { story.Id }, transaction, cancellationToken: cancellationToken));
+        await connection.ExecuteAsync(new CommandDefinition("UPDATE stories SET review_version = @ReviewVersion WHERE id = @Id",
+            new { story.Id, story.ReviewVersion }, transaction, cancellationToken: cancellationToken));
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    // Child rows (drafts, approvals, timings, play counts) go with the story through ON DELETE CASCADE.
+    public async Task<bool> DeleteAsync(Guid id, Guid expectedVersion, CancellationToken cancellationToken)
+    {
+        await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using NpgsqlTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+        Guid? version = await connection.QuerySingleOrDefaultAsync<Guid?>(new CommandDefinition(
+            "SELECT review_version FROM stories WHERE id = @Id FOR UPDATE", new { Id = id }, transaction, cancellationToken: cancellationToken));
+        if (version is null)
+        {
+            return false;
+        }
+
+        if (version != expectedVersion)
+        {
+            throw new StoryConflictException();
+        }
+
+        await connection.ExecuteAsync(new CommandDefinition("DELETE FROM stories WHERE id = @Id", new { Id = id }, transaction, cancellationToken: cancellationToken));
+        await transaction.CommitAsync(cancellationToken);
+        return true;
+    }
+
     private static Task DeleteTimingAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, Guid id, string language, CancellationToken cancellationToken) =>
         connection.ExecuteAsync(new CommandDefinition("DELETE FROM story_subtitle_timings WHERE story_id = @Id AND language = @Language",
             new { Id = id, Language = language }, transaction, cancellationToken: cancellationToken));

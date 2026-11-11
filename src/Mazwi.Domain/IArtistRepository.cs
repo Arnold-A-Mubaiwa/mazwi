@@ -6,4 +6,5 @@ public interface IArtistRepository
     Task<bool> AddAsync(Artist artist, CancellationToken cancellationToken);
     Task<Artist?> GetAsync(Guid id, CancellationToken cancellationToken);
     Task<Artist?> FindByEmailAsync(EmailAddress email, CancellationToken cancellationToken);
+    Task DeleteAsync(Guid id, CancellationToken cancellationToken);
 }

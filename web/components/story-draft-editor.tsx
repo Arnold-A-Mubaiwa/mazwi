@@ -8,6 +8,7 @@ import { FEATURES } from "@/lib/config";
 import { recordingError } from "@/lib/stories";
 import { RecordingPlayer } from "./recording-player";
 import { SubtitleTimer } from "./subtitle-timer";
+import { StoryRemoval } from "./story-removal";
 
 export function StoryDraftEditor({ id }: { id: string }) {
   const [draft, setDraft] = useState<StoryDraft | null>(null);
@@ -235,6 +236,7 @@ export function StoryDraftEditor({ id }: { id: string }) {
         </div>}
       </section>
     </div>
+    <StoryRemoval key={`removal-${draft.reviewVersion}`} draft={draft} disabled={busy || unsaved} onChanged={(updated, text) => { setDraft(updated); setSaveError(null); setMessage(text); }} onError={setSaveError} />
     {busy && <p className="draft-feedback" role="status">{aiPending === "voice" ? "Generating an AI voice…" : aiPending === "transcript" ? "Transcribing the original recording…" : aiPending ? "Creating an AI translation draft…" : "Saving your words…"}</p>}
     {message && <p className="draft-feedback" role="status">{message}</p>}
     {saveError && <p className="upload-error" role="alert">{saveError}</p>}
