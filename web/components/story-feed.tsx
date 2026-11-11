@@ -5,20 +5,25 @@ import { useEffect, useRef, useState } from "react";
 import { getFeed, getViewerStory, languageName, playbackLabel, viewingNote, type FeedPage, type ViewerStory } from "@/lib/feed";
 import { usePreferredLanguage } from "./language-picker";
 import { RecordingPlayer } from "./recording-player";
+import { DubbedPlayer } from "./dubbed-player";
+import { canDub, dubbedLabel } from "@/lib/dubbing";
 
 function StoryCard({ story, preferred }: { story: ViewerStory; preferred: ReturnType<typeof usePreferredLanguage> }) {
   const [original, setOriginal] = useState(false);
+  const originalUrl = `/api/feed/${story.id}/recording?language=${story.textLanguage}&version=${story.reviewVersion}&originalAudio=true`;
+  const dub = !original && canDub(story);
   const mediaUrl = original
-    ? `/api/feed/${story.id}/recording?language=${story.textLanguage}&version=${story.reviewVersion}&originalAudio=true`
+    ? originalUrl
     : story.mediaUrl;
   return <>
     <div className="viewer-heading"><p className="eyebrow">{story.type.toUpperCase()} / ARTIST APPROVED</p><span>{languageName(story.textLanguage)}</span></div>
     <h3><Link href={`/story/${story.id}`}>{story.title}</Link></h3>
     <p className="viewer-credit">{story.artistName} · {story.community} · {story.country}</p>
     <p className="viewer-note">{viewingNote(story, preferred)}</p>
-    <RecordingPlayer key={mediaUrl} src={mediaUrl} extension={original ? (story.originalRecordingExtension ?? ".mp4") : story.recordingExtension} label={original ? `Original ${languageName(story.originalLanguage)} audio` : playbackLabel(story)}
-      cues={original ? null : story.cues} subtitlesUrl={original ? null : story.subtitlesUrl} subtitleLanguage={story.textLanguage} />
-    {story.audioLanguage !== story.originalLanguage && <button className="text-control" onClick={() => setOriginal(value => !value)}>{original ? "Hear translated recording" : "Hear original"}</button>}
+    {dub ? <DubbedPlayer key={`dub-${mediaUrl}`} videoSrc={originalUrl} voiceSrc={story.mediaUrl} label={dubbedLabel(story)} cues={story.cues} subtitlesUrl={story.subtitlesUrl} language={story.textLanguage} />
+    : <RecordingPlayer key={mediaUrl} src={mediaUrl} extension={original ? (story.originalRecordingExtension ?? ".mp4") : story.recordingExtension} label={original ? `Original ${languageName(story.originalLanguage)} audio` : playbackLabel(story)}
+      cues={original ? null : story.cues} subtitlesUrl={original ? null : story.subtitlesUrl} subtitleLanguage={story.textLanguage} />}
+    {story.audioLanguage !== story.originalLanguage && <button className="text-control" onClick={() => setOriginal(value => !value)}>{canDub(story) ? (original ? "Watch dubbed" : "Watch with original sound") : original ? "Hear translated recording" : "Hear original"}</button>}
     <div className="viewer-text" lang={story.textLanguage}><p className="eyebrow">APPROVED WORDS / {languageName(story.textLanguage).toUpperCase()}</p><p>{story.text}</p></div>
     <p className="viewer-languages">Approved in: {story.availableLanguages.map(languageName).join(" · ")}</p>
   </>;

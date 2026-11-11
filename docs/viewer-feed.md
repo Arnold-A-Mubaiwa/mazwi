@@ -12,7 +12,7 @@ Choose a language once; the preference is shared between the feed and story page
 - Missing translated files can fall back to original audio, preserving the accurate audio-language label. Stories with no playable approved media are omitted.
 - **Hear original** switches to the original recording while keeping the approved translated text.
 
-The text beside the player is the full approved text; timed subtitles are described in docs/subtitles.md. No AI voice, automatic translation, voice cloning or video dubbing is claimed.
+The text beside the player is the full approved text; timed subtitles are described in docs/subtitles.md. Voice cloning is not offered. Browser dubbing of video stories is described in docs/dubbing.md.
 Native controls require the viewer to start playback. Changing stories/languages stops the previous player.
 Use next/previous buttons, arrow keys while the story card is focused, or vertical swipes. More results are loaded as the viewer reaches the end of a page.
 Artist, community, country and approved language credits appear with each story.
