@@ -4,7 +4,7 @@ public sealed class AiVoiceTests
 {
     private static Story ApprovedStory()
     {
-        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         story.SetTranscript("Original");
         story.SetTranslation("xh", "Molo. Unjani?");
         story.SetTranslation("en", "Hello");
@@ -133,7 +133,7 @@ public sealed class AiVoiceTests
     public void GetSpeechScript_NoSavedTranslation_ThrowsNotAllowed()
     {
         // Arrange
-        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         // Act / Assert
         Assert.Throws<AiDraftNotAllowedException>(() => story.GetSpeechScript("xh", story.ReviewVersion));
     }

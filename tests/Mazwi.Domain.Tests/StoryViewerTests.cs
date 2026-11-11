@@ -4,7 +4,7 @@ public sealed class StoryViewerTests
 {
     private static Story StoryWithText()
     {
-        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 19), true);
+        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 19), true, TestOwner.Id);
         story.SetTranscript("Original"); story.SetTranslation("xh", "Translated text"); return story;
     }
 

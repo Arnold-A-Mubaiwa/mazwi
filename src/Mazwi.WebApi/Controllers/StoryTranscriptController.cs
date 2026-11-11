@@ -1,10 +1,13 @@
 using Mazwi.Application;
 using Mazwi.WebApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Mazwi.WebApi.Controllers;
 
 [ApiController]
+[Authorize]
+[StoryOwner]
 [Route("api/stories/{id:guid}/drafts/transcript/ai-draft")]
 [RequestSizeLimit(10_000)]
 public sealed class StoryTranscriptController(IStoryTranscriptService service) : ControllerBase

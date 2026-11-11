@@ -13,7 +13,7 @@ Approval includes the current saved review version. Concurrent changes return 40
 Approval state and content changes are written transactionally under the story row lock. Reads use a consistent database snapshot.
 
 The original approval makes the story eligible for the next viewer-feed feature; translated versions still need individual approval.
-These are unauthenticated local artist routes, not a hosted access-control system. Keep the app bound to localhost. Accounts remain pending.
+Since issue #33 these routes require the signed-in owner of the story; see docs/accounts.md.
 
 ## Media
 

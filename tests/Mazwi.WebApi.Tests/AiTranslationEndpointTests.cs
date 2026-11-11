@@ -15,7 +15,7 @@ public sealed class AiTranslationEndpointTests : IDisposable
 {
     private readonly IStoryRepository _repository = Substitute.For<IStoryRepository>();
     private readonly ITranslationDrafter _drafter = Substitute.For<ITranslationDrafter>();
-    private readonly Story _story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+    private readonly Story _story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
     private readonly WebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
@@ -27,6 +27,7 @@ public sealed class AiTranslationEndpointTests : IDisposable
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
+            builder.SignInTestArtist(access: null);
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IStoryRepository>(); services.AddSingleton(_repository);

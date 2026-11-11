@@ -11,9 +11,10 @@ $nextCli = Join-Path $webRoot 'node_modules/next/dist/bin/next'
 
 function Test-MazwiReady {
     try {
-        $studio = Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:3000/api/studio?limit=1' -TimeoutSec 2
+        # The feed is public and database-backed; Studio data now needs a signed-in artist.
+        $feed = Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:3000/api/feed?limit=1' -TimeoutSec 2
         $site = Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:3000/studio' -TimeoutSec 2
-        return $studio.StatusCode -eq 200 -and $site.StatusCode -eq 200
+        return $feed.StatusCode -eq 200 -and $site.StatusCode -eq 200
     } catch { return $false }
 }
 

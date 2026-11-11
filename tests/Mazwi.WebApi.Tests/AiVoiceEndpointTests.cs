@@ -16,7 +16,7 @@ public sealed class AiVoiceEndpointTests : IDisposable
     private readonly IStoryRepository _repository = Substitute.For<IStoryRepository>();
     private readonly IStoryMediaStore _mediaStore = Substitute.For<IStoryMediaStore>();
     private readonly ISpeechGenerator _generator = Substitute.For<ISpeechGenerator>();
-    private readonly Story _story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+    private readonly Story _story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
     private readonly WebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
@@ -29,6 +29,7 @@ public sealed class AiVoiceEndpointTests : IDisposable
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
+            builder.SignInTestArtist(access: null);
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IStoryRepository>(); services.AddSingleton(_repository);

@@ -2,7 +2,7 @@
 
 Issue #9 adds a local Next.js App Router / TypeScript / Tailwind shell in `web/`.
 Business logic, AI calls, SQL, and persistence remain in the .NET backend layers.
-The manual demo includes uploads, Studio, manual text, recording playback, explicit artist approval and the viewer feed. AI processing and accounts remain pending. See docs/phase-1-manual.md.
+The manual demo includes uploads, Studio, manual text, recording playback, explicit artist approval and the viewer feed. AI drafts are documented in docs/level-1.md and artist accounts in docs/accounts.md. See docs/phase-1-manual.md.
 
 ## Install and validate (repository root)
 

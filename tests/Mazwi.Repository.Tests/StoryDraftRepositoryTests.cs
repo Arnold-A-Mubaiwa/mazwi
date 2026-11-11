@@ -6,7 +6,7 @@ public sealed class StoryDraftRepositoryTests(PostgresFixture fixture) : IClassF
 {
     private async Task<Story> AddStoryAsync()
     {
-        Story story = Story.Upload(new StoryDetails("Draft test", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("Draft test", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         await new StoryRepository(fixture.DataSource).AddAsync(story, CancellationToken.None);
         return story;
     }
@@ -57,7 +57,7 @@ public sealed class StoryDraftRepositoryTests(PostgresFixture fixture) : IClassF
     public async Task SaveTranscriptAsync_MissingStory_ReportsFailedUpdate()
     {
         // Arrange
-        Story story = Story.Upload(new StoryDetails("Missing", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("Missing", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         story.SetTranscript("Original");
         // Act / Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() => new StoryRepository(fixture.DataSource).SaveTranscriptAsync(story, CancellationToken.None));

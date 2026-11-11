@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { RequireArtist } from "@/components/require-artist";
 import { UploadForm } from "@/components/upload-form";
 import { FEATURES } from "@/lib/config";
 
@@ -10,7 +11,7 @@ export default function UploadPage() {
     <p className="eyebrow">THE FIRST STEP IS YOUR VOICE</p>
     <h1>A story only<br /><em>you can tell.</em></h1>
     <p className="upload-intro">A poem, a song, a tale passed down. Start with the original recording, in your own language.</p>
-    <div className="upload-layout"><UploadForm /><aside className="upload-aside">
+    <div className="upload-layout"><RequireArtist><UploadForm /></RequireArtist><aside className="upload-aside">
       <p className="eyebrow">YOUR WORDS. YOUR SAY.</p>
       <h2>Saved here.<br />Not shared yet.</h2>
       <p>Your recording stays on this computer. Uploading does not publish it or send it to an AI service.</p>

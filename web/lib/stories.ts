@@ -10,6 +10,7 @@ export function recordingError(file: File | null): string | null {
 export async function uploadStory(form: FormData, signal?: AbortSignal): Promise<UploadedStory> {
   const response = await fetch("/api/stories", { method: "POST", body: form, signal });
   if (!response.ok) {
+    if (response.status === 401) throw new Error("You have been signed out. Sign in again; your form has been kept.");
     if (response.status === 413) throw new Error("Your recording is too large. Choose a file of 25 MB or smaller.");
     if (response.status === 400) {
       const problem = await response.json().catch(() => null);

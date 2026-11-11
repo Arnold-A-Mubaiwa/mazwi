@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { RequireArtist } from "@/components/require-artist";
 import { StoryDraftEditor } from "@/components/story-draft-editor";
 import { FEATURES } from "@/lib/config";
 
@@ -11,6 +12,6 @@ export default async function StoryReviewPage({ params }: { params: Promise<{ id
     <p className="eyebrow">YOUR WORDS. STILL YOUR SAY.</p>
     <h1>A story, <em>in your words.</em></h1>
     <p className="draft-intro">Write the original. Share its meaning in another language. Save your work here before the next step.</p>
-    <StoryDraftEditor id={id} />
+    <RequireArtist><StoryDraftEditor id={id} /></RequireArtist>
   </main>;
 }

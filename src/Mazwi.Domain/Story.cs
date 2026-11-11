@@ -7,17 +7,24 @@ public sealed class Story
     public StoryDetails Details { get; }
     public StoryRecording Recording { get; }
     public DateTimeOffset PermissionRecordedAt { get; }
+    // Null only for stories saved before accounts existed; nobody can change them until the owner claims them.
+    public Guid? OwnerId { get; }
     public string Status => OriginalApproved ? "published" : "unpublished";
     public Guid ReviewVersion { get; private set; } = Guid.NewGuid();
     public bool OriginalApproved { get; private set; }
     public StoryText? Transcript { get; private set; }
     public IReadOnlyCollection<TranslationDraft> Translations => _translations.Values.ToArray();
 
-    private Story(Guid id, StoryDetails details, StoryRecording recording, DateTimeOffset permissionRecordedAt)
+    private Story(Guid id, StoryDetails details, StoryRecording recording, DateTimeOffset permissionRecordedAt, Guid? ownerId)
     {
         if (id == Guid.Empty || permissionRecordedAt == default)
         {
             throw new DomainException("A story requires an identity and recorded permission.");
+        }
+
+        if (ownerId == Guid.Empty)
+        {
+            throw new DomainException("A story owner requires an identity.");
         }
 
         ArgumentNullException.ThrowIfNull(details);
@@ -26,16 +33,27 @@ public sealed class Story
         Details = details;
         Recording = recording;
         PermissionRecordedAt = permissionRecordedAt;
+        OwnerId = ownerId;
     }
 
-    public static Story Upload(StoryDetails details, StoryRecording recording, bool permission)
+    public static Story Upload(StoryDetails details, StoryRecording recording, bool permission, Guid ownerId)
     {
         if (!permission)
         {
             throw new DomainException("Permission to store and process this recording is required.");
         }
 
-        return new Story(Guid.NewGuid(), details, recording, DateTimeOffset.UtcNow);
+        return new Story(Guid.NewGuid(), details, recording, DateTimeOffset.UtcNow, ownerId);
+    }
+
+    public bool IsOwnedBy(Guid artistId) => artistId != Guid.Empty && OwnerId == artistId;
+
+    public void EnsureOwnedBy(Guid artistId)
+    {
+        if (!IsOwnedBy(artistId))
+        {
+            throw new StoryAccessDeniedException();
+        }
     }
 
     public void SetTranscript(string text)
@@ -232,9 +250,10 @@ public sealed class Story
     }
 
     public static Story Rehydrate(Guid id, StoryDetails details, StoryRecording recording, DateTimeOffset permissionRecordedAt,
-        string? transcript = null, IEnumerable<TranslationDraft>? translations = null, Guid? reviewVersion = null, bool originalApproved = false)
+        string? transcript = null, IEnumerable<TranslationDraft>? translations = null, Guid? reviewVersion = null, bool originalApproved = false,
+        Guid? ownerId = null)
     {
-        var story = new Story(id, details, recording, permissionRecordedAt);
+        var story = new Story(id, details, recording, permissionRecordedAt, ownerId);
         if (transcript is not null)
         {
             story.SetTranscript(transcript);

@@ -2,7 +2,7 @@ namespace Mazwi.Domain.Tests;
 
 public sealed class StoryDraftTests
 {
-    private static Story NewStory() => Story.Upload(new StoryDetails("Tsuro", "Rudo", "Shona", "ZW", "folktale", "sn"), new StoryRecording("clip.wav", 12), true);
+    private static Story NewStory() => Story.Upload(new StoryDetails("Tsuro", "Rudo", "Shona", "ZW", "folktale", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
 
     [Fact]
     public void SetTranscript_ValidText_PreservesInternalFormattingAndUnpublishedState()

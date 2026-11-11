@@ -9,7 +9,7 @@ public sealed class StoryApprovalRepositoryTests(PostgresFixture fixture) : ICla
     {
         // Arrange
         var repository = new StoryRepository(fixture.DataSource);
-        Story story = Story.Upload(new StoryDetails("Approval fixture", "Test artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 19), true);
+        Story story = Story.Upload(new StoryDetails("Approval fixture", "Test artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 19), true, TestOwner.Id);
         await repository.AddAsync(story, CancellationToken.None);
         try
         {
