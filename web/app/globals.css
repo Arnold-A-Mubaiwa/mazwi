@@ -207,3 +207,6 @@ h3 { font-size: 35px; line-height: 1.14; letter-spacing: -1px; margin: 0 0 15px;
 .subtitle-timer input { width: 8em; font: inherit; color: var(--paper); background: #22261d; border: 1px solid #414735; border-radius: 4px; padding: 8px; }
 .subtitle-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
 .studio-plays { font-size: 13px; color: var(--green); margin-top: 8px; }
+.share-story { margin-top: 18px; }
+.share-message { font-size: 13px; color: var(--green); overflow-wrap: anywhere; }
+.shared-recording { font-size: 13px; color: var(--green); }
