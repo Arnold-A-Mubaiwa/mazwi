@@ -3,16 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import { resyncTarget } from "@/lib/dubbing";
 import { cueAt, type SubtitleCue } from "@/lib/subtitles";
+import { createPlayTracker } from "@/lib/plays";
 
-type Props = { videoSrc: string; voiceSrc: string; label: string; cues?: SubtitleCue[] | null; subtitlesUrl?: string | null; language: string };
+type Props = { videoSrc: string; voiceSrc: string; label: string; cues?: SubtitleCue[] | null; subtitlesUrl?: string | null; language: string; onPlayed?: () => void };
 
 // Plays the original video with the translated voice. The video's own controls drive both:
 // play, pause, seek, speed, volume and mute are mirrored onto the voice; the video's original sound is silenced.
-export function DubbedPlayer({ videoSrc, voiceSrc, label, cues, subtitlesUrl, language }: Props) {
+export function DubbedPlayer({ videoSrc, voiceSrc, label, cues, subtitlesUrl, language, onPlayed }: Props) {
   const video = useRef<HTMLVideoElement | null>(null);
   const voice = useRef<HTMLAudioElement | null>(null);
   const [now, setNow] = useState(0);
   const [failed, setFailed] = useState(false);
+  const played = useRef(onPlayed);
+  useEffect(() => { played.current = onPlayed; }, [onPlayed]);
+  const tracker = useRef<ReturnType<typeof createPlayTracker> | null>(null);
+  const track = (milliseconds: number, playing: boolean) => {
+    tracker.current ??= createPlayTracker(() => played.current?.());
+    tracker.current.update(milliseconds, playing);
+  };
 
   useEffect(() => {
     const picture = video.current;
@@ -52,7 +60,8 @@ export function DubbedPlayer({ videoSrc, voiceSrc, label, cues, subtitlesUrl, la
   const cue = cueAt(cues, now);
   return <div className="recording-player dubbed-player">
     <p>{label}</p>
-    <video ref={video} controls playsInline preload="metadata" src={videoSrc} aria-label={label} onError={() => setFailed(true)}>
+    <video ref={video} controls playsInline preload="metadata" src={videoSrc} aria-label={label} onError={() => setFailed(true)}
+      onTimeUpdate={event => track(Math.round(event.currentTarget.currentTime * 1000), !event.currentTarget.paused)}>
       {subtitlesUrl && <track kind="subtitles" src={subtitlesUrl} srcLang={language} label="Artist-timed subtitles" />}
     </video>
     <audio ref={voice} preload="auto" src={voiceSrc} onError={() => setFailed(true)} data-testid="dubbed-voice"
