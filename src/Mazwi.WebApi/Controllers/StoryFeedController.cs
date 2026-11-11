@@ -33,4 +33,12 @@ public sealed class StoryFeedController(IStoryFeedService service) : ControllerB
         Response.Headers.CacheControl = "no-store";
         return recording is null ? NotFound() : File(recording.Content, recording.ContentType, enableRangeProcessing: true);
     }
+
+    [HttpGet("{id:guid}/subtitles")]
+    public async Task<IActionResult> Subtitles(Guid id, Guid version, CancellationToken cancellationToken, string language = "sn", bool originalAudio = false)
+    {
+        IReadOnlyList<SubtitleCueDto>? cues = await service.GetSubtitlesAsync(id, language, version, originalAudio, cancellationToken);
+        Response.Headers.CacheControl = "no-store";
+        return cues is null ? NotFound() : Content(WebVtt.Format(cues), "text/vtt; charset=utf-8");
+    }
 }

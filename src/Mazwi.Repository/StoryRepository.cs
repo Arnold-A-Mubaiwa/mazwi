@@ -55,13 +55,47 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
                 EXISTS (SELECT 1 FROM story_approvals a WHERE a.story_id = d.story_id AND a.language = d.language AND a.speaker_checked) AS SpeakerChecked
             FROM story_translation_drafts d WHERE d.story_id = @Id ORDER BY d.language
             """, new { Id = id }, transaction, cancellationToken: cancellationToken));
+        IEnumerable<TimingRow> timings = await connection.QueryAsync<TimingRow>(new CommandDefinition(
+            "SELECT language, starts_ms AS StartsMs, end_ms AS EndMs FROM story_subtitle_timings WHERE story_id = @Id",
+            new { Id = id }, transaction, cancellationToken: cancellationToken));
         await transaction.CommitAsync(cancellationToken);
         return Story.Rehydrate(row.Id, new StoryDetails(row.Title, row.ArtistName, row.Community, row.Country, row.Type, row.Language),
             new StoryRecording(string.Concat("recording", row.Extension), row.Bytes), row.PermissionRecordedAt, row.Transcript,
             drafts.Select(d => new TranslationDraft(d.Language, d.Text,
                 d.MediaId is Guid mediaId ? new TranslatedRecording(mediaId, new StoryRecording(string.Concat("recording", d.MediaExtension), d.MediaBytes!.Value), d.MediaVoice) : null,
-                d.IsApproved, new TranslationNotes(d.Notes), d.SpeakerChecked)), row.ReviewVersion, row.OriginalApproved, row.OwnerId);
+                d.IsApproved, new TranslationNotes(d.Notes), d.SpeakerChecked)), row.ReviewVersion, row.OriginalApproved, row.OwnerId,
+            timings.Select(t => KeyValuePair.Create(t.Language, new SubtitleTiming(t.StartsMs, t.EndMs))).ToArray());
     }
+
+    public async Task SaveSubtitleTimingAsync(Story story, string language, Guid expectedVersion, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(story);
+        SubtitleTiming timing = story.SubtitleTimings.TryGetValue(language, out SubtitleTiming? saved) ? saved
+            : throw new ArgumentException("The story has no timing for this language.", nameof(language));
+        await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using NpgsqlTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+        if (await LockAsync(connection, transaction, story.Id, cancellationToken) != expectedVersion)
+        {
+            throw new StoryConflictException();
+        }
+
+        await connection.ExecuteAsync(new CommandDefinition("""
+            INSERT INTO story_subtitle_timings (story_id, language, starts_ms, end_ms) VALUES (@Id, @Language, @StartsMs, @EndMs)
+            ON CONFLICT (story_id, language) DO UPDATE SET starts_ms = EXCLUDED.starts_ms, end_ms = EXCLUDED.end_ms
+            """, new { story.Id, Language = language, StartsMs = timing.StartsMs.ToArray(), timing.EndMs }, transaction, cancellationToken: cancellationToken));
+        // Timing the original revokes every approval, as a transcript edit does; timing a translation revokes only that language.
+        await connection.ExecuteAsync(new CommandDefinition("""
+            DELETE FROM story_approvals a USING stories s
+            WHERE s.id = a.story_id AND a.story_id = @Id AND (@Language = s.original_language OR a.language = @Language)
+            """, new { story.Id, Language = language }, transaction, cancellationToken: cancellationToken));
+        await connection.ExecuteAsync(new CommandDefinition("UPDATE stories SET review_version = @ReviewVersion WHERE id = @Id",
+            new { story.Id, story.ReviewVersion }, transaction, cancellationToken: cancellationToken));
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    private static Task DeleteTimingAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, Guid id, string language, CancellationToken cancellationToken) =>
+        connection.ExecuteAsync(new CommandDefinition("DELETE FROM story_subtitle_timings WHERE story_id = @Id AND language = @Language",
+            new { Id = id, Language = language }, transaction, cancellationToken: cancellationToken));
 
     public Task SaveTranscriptAsync(Story story, CancellationToken cancellationToken) =>
         SaveTranscriptCoreAsync(story, null, cancellationToken);
@@ -92,6 +126,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
             await connection.ExecuteAsync(new CommandDefinition("UPDATE stories SET transcript = @Text, review_version = gen_random_uuid() WHERE id = @Id",
                 new { story.Id, Text = story.Transcript.Value }, transaction, cancellationToken: cancellationToken));
             await connection.ExecuteAsync(new CommandDefinition("DELETE FROM story_approvals WHERE story_id = @Id", new { story.Id }, transaction, cancellationToken: cancellationToken));
+            await DeleteTimingAsync(connection, transaction, story.Id, story.Details.Language, cancellationToken);
         }
         await transaction.CommitAsync(cancellationToken);
     }
@@ -133,6 +168,11 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
                 INSERT INTO story_translation_drafts (story_id, language, text, notes) VALUES (@Id, @Language, @Text, @Notes)
                 ON CONFLICT (story_id, language) DO UPDATE SET text = EXCLUDED.text, notes = EXCLUDED.notes
                 """, new { Id = storyId, draft.Language, Text = draft.Text.Value, Notes = draft.Notes.Items.ToArray() }, transaction, cancellationToken: cancellationToken));
+            if (previous?.Text != draft.Text.Value)
+            {
+                await DeleteTimingAsync(connection, transaction, storyId, draft.Language, cancellationToken);
+            }
+
             await InvalidateAsync(connection, transaction, storyId, draft.Language, cancellationToken);
         }
         await transaction.CommitAsync(cancellationToken);
@@ -157,6 +197,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
             throw new DomainException("Save the translation before adding its recording.");
         }
 
+        await DeleteTimingAsync(connection, transaction, storyId, draft.Language, cancellationToken);
         await InvalidateAsync(connection, transaction, storyId, draft.Language, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
@@ -244,6 +285,13 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
             new { Id = id, Language = language }, transaction, cancellationToken: cancellationToken));
         await connection.ExecuteAsync(new CommandDefinition("UPDATE stories SET review_version = gen_random_uuid() WHERE id = @Id",
             new { Id = id }, transaction, cancellationToken: cancellationToken));
+    }
+
+    private sealed class TimingRow
+    {
+        public string Language { get; set; } = string.Empty;
+        public int[] StartsMs { get; set; } = [];
+        public int EndMs { get; set; }
     }
 
     private sealed class TranslationRow

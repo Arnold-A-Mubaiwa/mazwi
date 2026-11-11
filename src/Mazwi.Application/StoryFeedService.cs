@@ -43,7 +43,8 @@ public sealed class StoryFeedService(IStoryRepository repository, IStoryMediaSto
         return new(story.Id, story.Details.Title, story.Details.ArtistName, story.Details.Community, story.Details.Country,
             story.Details.Type, story.Details.Language, version.TextLanguage, version.AudioLanguage, version.Text.Value,
             version.Recording.Extension, story.ReviewVersion,
-            new[] { story.Details.Language }.Concat(story.Translations.Where(d => d.IsApproved).Select(d => d.Language)).ToArray(), story.Recording.Extension, version.Voice, version.SpeakerChecked);
+            new[] { story.Details.Language }.Concat(story.Translations.Where(d => d.IsApproved).Select(d => d.Language)).ToArray(), story.Recording.Extension, version.Voice, version.SpeakerChecked,
+            SubtitleCueDto.From(version.Cues));
     }
 
     public async Task<RecordingPlaybackDto?> GetRecordingAsync(Guid id, string language, Guid reviewVersion, bool originalAudio, CancellationToken cancellationToken)
@@ -57,6 +58,25 @@ public sealed class StoryFeedService(IStoryRepository repository, IStoryMediaSto
         story.EnsureVersion(reviewVersion);
         var resolved = await ResolveAsync(story, language, originalAudio, cancellationToken);
         return resolved is null ? null : new(resolved.Value.Stream, RecordingPlaybackDto.ContentTypeFor(resolved.Value.Version.Recording.Extension));
+    }
+
+    public async Task<IReadOnlyList<SubtitleCueDto>?> GetSubtitlesAsync(Guid id, string language, Guid reviewVersion, bool originalAudio, CancellationToken cancellationToken)
+    {
+        Story? story = await repository.GetAsync(id, cancellationToken);
+        if (story is null || !story.OriginalApproved)
+        {
+            return null;
+        }
+
+        story.EnsureVersion(reviewVersion);
+        var resolved = await ResolveAsync(story, language, originalAudio, cancellationToken);
+        if (resolved is null)
+        {
+            return null;
+        }
+
+        await resolved.Value.Stream.DisposeAsync();
+        return SubtitleCueDto.From(resolved.Value.Version.Cues);
     }
 
     private async Task<(ApprovedStoryVersion Version, Stream Stream)?> ResolveAsync(Story story, string language, bool originalAudio, CancellationToken cancellationToken)

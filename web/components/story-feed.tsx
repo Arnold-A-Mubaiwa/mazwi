@@ -16,7 +16,8 @@ function StoryCard({ story, preferred }: { story: ViewerStory; preferred: Return
     <h3><Link href={`/story/${story.id}`}>{story.title}</Link></h3>
     <p className="viewer-credit">{story.artistName} · {story.community} · {story.country}</p>
     <p className="viewer-note">{viewingNote(story, preferred)}</p>
-    <RecordingPlayer key={mediaUrl} src={mediaUrl} extension={original ? (story.originalRecordingExtension ?? ".mp4") : story.recordingExtension} label={original ? `Original ${languageName(story.originalLanguage)} audio` : playbackLabel(story)} />
+    <RecordingPlayer key={mediaUrl} src={mediaUrl} extension={original ? (story.originalRecordingExtension ?? ".mp4") : story.recordingExtension} label={original ? `Original ${languageName(story.originalLanguage)} audio` : playbackLabel(story)}
+      cues={original ? null : story.cues} subtitlesUrl={original ? null : story.subtitlesUrl} subtitleLanguage={story.textLanguage} />
     {story.audioLanguage !== story.originalLanguage && <button className="text-control" onClick={() => setOriginal(value => !value)}>{original ? "Hear translated recording" : "Hear original"}</button>}
     <div className="viewer-text" lang={story.textLanguage}><p className="eyebrow">APPROVED WORDS / {languageName(story.textLanguage).toUpperCase()}</p><p>{story.text}</p></div>
     <p className="viewer-languages">Approved in: {story.availableLanguages.map(languageName).join(" · ")}</p>
