@@ -35,7 +35,7 @@ public sealed class StoriesEndpointTests : IDisposable
         _client = _factory.CreateClient();
     }
 
-    internal static MultipartFormDataContent Form(string title = "Tsuro", string permission = "true", string fileName = "clip.wav", byte[]? data = null)
+    internal static MultipartFormDataContent Form(string title = "Tsuro", string permission = "true", string fileName = "clip.wav", byte[]? data = null, string language = "sn")
     {
         var form = new MultipartFormDataContent();
         form.Add(new StringContent(title), "title");
@@ -43,7 +43,7 @@ public sealed class StoriesEndpointTests : IDisposable
         form.Add(new StringContent("Shona"), "community");
         form.Add(new StringContent("ZW"), "country");
         form.Add(new StringContent("folktale"), "type");
-        form.Add(new StringContent("sn"), "language");
+        form.Add(new StringContent(language), "language");
         form.Add(new StringContent(permission), "permission");
         form.Add(new ByteArrayContent(data ?? "RIFF0000WAVEdata0000"u8.ToArray()), "recording", fileName);
         return form;

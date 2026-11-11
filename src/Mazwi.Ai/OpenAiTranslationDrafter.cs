@@ -114,12 +114,5 @@ public sealed class OpenAiTranslationDrafter(HttpClient client, string? apiKey, 
         }
     }
 
-    private static string LanguageName(string language) => language switch
-    {
-        "sn" => "Shona",
-        "xh" => "isiXhosa",
-        "sw" => "Swahili",
-        "en" => "English",
-        _ => throw new TranslationDraftUnavailableException()
-    };
+    private static string LanguageName(string language) => StoryLanguages.Find(language)?.EnglishName ?? throw new TranslationDraftUnavailableException();
 }

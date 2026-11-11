@@ -107,7 +107,7 @@ public sealed class OpenAiSpeechGeneratorTests
         JsonElement session = socket.Sent[0].RootElement.GetProperty("session");
         Assert.Equal("marin", session.GetProperty("audio").GetProperty("output").GetProperty("voice").GetString());
         Assert.Equal(24000, session.GetProperty("audio").GetProperty("output").GetProperty("format").GetProperty("rate").GetInt32());
-        Assert.Contains("isiXhosa", session.GetProperty("instructions").GetString());
+        Assert.Contains("Xhosa", session.GetProperty("instructions").GetString());
         Assert.Contains("line break", session.GetProperty("instructions").GetString());
         string passage = socket.Sent[1].RootElement.GetProperty("item").GetProperty("content")[0].GetProperty("text").GetString()!;
         Assert.Equal(script.Parts[0], JsonDocument.Parse(passage).RootElement.GetProperty("passage").GetString());

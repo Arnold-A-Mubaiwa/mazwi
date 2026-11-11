@@ -114,6 +114,7 @@ builder.Services.AddSingleton<ITranscriber>(services => new OpenAiTranscriber(
     builder.Configuration["MAZWI_TRANSCRIPTION_MODEL"] ?? "gpt-transcribe"));
 builder.Services.AddScoped<IStoryTranscriptService, StoryTranscriptService>();
 builder.Services.AddScoped<IStoryReviewService, StoryReviewService>();
+builder.Services.AddSingleton<ILanguageService, LanguageService>();
 builder.Services.AddScoped<IStoryFeedService, StoryFeedService>();
 builder.Services.AddScoped<IStoryStudioService, StoryStudioService>();
 builder.Services.AddScoped<IStorySubtitleService, StorySubtitleService>();

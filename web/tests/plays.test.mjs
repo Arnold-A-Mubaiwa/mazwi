@@ -53,7 +53,7 @@ test("GetStudioStats_ErrorOrBadShape_Throws", async (t) => {
   await assert.rejects(getStudioStats(), /could not be loaded/);
   t.mock.method(globalThis, "fetch", async () => Response.json([{ storyId: "a", plays: -1, playsLast7Days: 0, languages: [] }]));
   await assert.rejects(getStudioStats(), /unexpected play counts/);
-  t.mock.method(globalThis, "fetch", async () => Response.json([{ storyId: "a", plays: 1, playsLast7Days: 0, languages: [{ language: "fr", plays: 1, playsLast7Days: 0 }] }]));
+  t.mock.method(globalThis, "fetch", async () => Response.json([{ storyId: "a", plays: 1, playsLast7Days: 0, languages: [{ language: "de", plays: 1, playsLast7Days: 0 }] }]));
   await assert.rejects(getStudioStats(), /unexpected play counts/);
 });
 test("PlaysSummary_CountsAndLanguages_ReadNaturally", () => {

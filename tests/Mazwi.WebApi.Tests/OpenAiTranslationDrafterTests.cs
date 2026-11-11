@@ -39,7 +39,7 @@ public sealed class OpenAiTranslationDrafterTests
             Assert.True(root.GetProperty("text").GetProperty("format").GetProperty("strict").GetBoolean());
             Assert.Equal(2, root.GetProperty("text").GetProperty("format").GetProperty("schema").GetProperty("required").GetArrayLength());
             string instructions = root.GetProperty("instructions").GetString()!;
-            foreach (string phrase in new[] { "Shona to isiXhosa", "rhythm", "humour", "clan", "praise", "proverbs by meaning", "line breaks for poems" })
+            foreach (string phrase in new[] { "Shona to Xhosa", "rhythm", "humour", "clan", "praise", "proverbs by meaning", "line breaks for poems" })
             {
                 Assert.Contains(phrase, instructions);
             }
@@ -55,6 +55,38 @@ public sealed class OpenAiTranslationDrafterTests
         Assert.Equal("Molo\nSekuru", result.Translation.Value);
         Assert.Equal("Name retained", Assert.Single(result.Notes.Items));
         Assert.Equal(1, handler.Calls);
+    }
+
+    [Theory]
+    [InlineData("yo", "ha", "Yoruba to Hausa")]
+    [InlineData("am", "om", "Amharic to Oromo")]
+    [InlineData("nd", "ny", "Northern Ndebele (Zimbabwe) to Chichewa (Nyanja)")]
+    public async Task DraftAsync_NewCatalogueLanguages_NamesBothLanguagesInEnglish(string source, string target, string phrase)
+    {
+        // Arrange
+        using var handler = new Handler(async (request, token) =>
+        {
+            using JsonDocument body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(token));
+            Assert.Contains(phrase, body.RootElement.GetProperty("instructions").GetString());
+            return Envelope("{\"translation\":\"Draft\",\"notes\":[]}");
+        });
+        using var client = new HttpClient(handler);
+        // Act
+        TranslationDraftResult result = await new OpenAiTranslationDrafter(client, "test-key", "configured-model").DraftAsync("Words", source, target, "story", CancellationToken.None);
+        // Assert
+        Assert.Equal("Draft", result.Translation.Value);
+    }
+
+    [Fact]
+    public async Task DraftAsync_LanguageOutsideCatalogue_FailsSafelyWithoutCallingOpenAi()
+    {
+        // Arrange
+        using var handler = new Handler((_, _) => Task.FromResult(Envelope("{}")));
+        using var client = new HttpClient(handler);
+        // Act / Assert
+        await Assert.ThrowsAsync<TranslationDraftUnavailableException>(() =>
+            new OpenAiTranslationDrafter(client, "test-key", "configured-model").DraftAsync("Words", "sn", "de", "story", CancellationToken.None));
+        Assert.Equal(0, handler.Calls);
     }
 
     [Theory]

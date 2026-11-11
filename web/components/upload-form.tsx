@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { FEATURES } from "@/lib/config";
-import { LANGUAGES } from "@/lib/languages";
+import { LANGUAGES, languageLabel } from "@/lib/languages";
 import { recordingError, uploadStory, type UploadedStory } from "@/lib/stories";
 import { takeSharedRecording } from "@/lib/share";
 
@@ -70,7 +70,7 @@ export function UploadForm() {
         <label>Community<input name="community" maxLength={100} required placeholder="For example, Shona, Zimbabwe" /></label>
         <label><span id="country-label">Country code</span><input name="country" minLength={2} maxLength={2} pattern="[A-Za-z]{2}" required placeholder="ZW" aria-labelledby="country-label" aria-describedby="country-help" /><span id="country-help">Two letters, for example ZW or ZA.</span></label>
         <label><span id="type-label">Story type</span><select name="type" aria-labelledby="type-label" defaultValue="story"><option value="story">Story</option><option value="poem">Poem</option><option value="folktale">Folktale</option><option value="song">Song</option></select></label>
-        <label><span id="language-label">Original language</span><select name="language" aria-labelledby="language-label" defaultValue="sn">{LANGUAGES.map(language => <option key={language.code} value={language.code}>{language.name}</option>)}</select></label>
+        <label><span id="language-label">Original language</span><select name="language" aria-labelledby="language-label" defaultValue="sn">{LANGUAGES.map(language => <option key={language.code} value={language.code}>{languageLabel(language)}</option>)}</select></label>
       </div>
       <label className="permission-field"><input type="checkbox" name="permission" value="true" required /><span>I own this recording or have permission to upload it and allow Mazwi to store and process it. This does not allow voice cloning.</span></label>
       <button className="retry-button" type="submit">{busy ? "Saving your story…" : "Save my story"}</button>

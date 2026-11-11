@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { LANGUAGES, type LanguageCode } from "@/lib/languages";
+import { LANGUAGES, aiQualityNotice, languageLabel, type LanguageCode } from "@/lib/languages";
 import { getStoryDraft, saveStoryText, approveStory, uploadTranslationRecording, draftTranslation, draftTranscript, generateVoice, MAX_STORY_TEXT, MAX_VOICE_TEXT, type StoryDraft } from "@/lib/story-drafts";
 import { FEATURES } from "@/lib/config";
 import { recordingError } from "@/lib/stories";
@@ -32,7 +32,7 @@ export function StoryDraftEditor({ id }: { id: string }) {
       setTranscript(story.transcript ?? "");
       setTranslations(Object.fromEntries(story.translations.map(translation => [translation.language, translation.text])));
       setNotes(Object.fromEntries(story.translations.map(translation => [translation.language, translation.notes ?? []])));
-      setTarget(LANGUAGES.find(language => language.code !== story.language)!.code);
+      setTarget(LANGUAGES.find(language => language.aiChecked && language.code !== story.language)!.code);
     }).catch(failure => {
       if (!controller.signal.aborted) setLoadError(failure instanceof Error ? failure.message : "Could not load this story.");
     });
@@ -167,7 +167,8 @@ export function StoryDraftEditor({ id }: { id: string }) {
         <RecordingPlayer key={`original-${draft.reviewVersion}`} extension={draft.recordingExtension} label={`Original ${originalLanguage} recording`} src={`/api/stories/${id}/recordings/${draft.language}?v=${draft.reviewVersion}`} />
         {FEATURES.aiTranscript && <>
           <button className="retry-button secondary-button" type="button" disabled={busy || unsaved} onClick={() => void generateTranscript()}>AI first draft</button>
-          <p className="draft-notice"><strong>Check and correct this before approving.</strong> AI transcripts of Shona and other African languages are often wrong. Listen to the recording and fix every line. Each request incurs an API charge.</p>
+          <p className="draft-notice"><strong>Check and correct this before approving.</strong> AI transcripts of {originalLanguage} and other African languages are often wrong. Listen to the recording and fix every line. Each request incurs an API charge.</p>
+          {aiQualityNotice(draft.language) && <p className="draft-notice" data-testid="ai-quality-notice"><strong>AI quality untested.</strong> {aiQualityNotice(draft.language)}</p>}
         </>}
         <form onSubmit={event => { event.preventDefault(); void save("transcript"); }}>
           <fieldset disabled={busy}><legend className="sr-only">Original transcript</legend>
@@ -191,8 +192,9 @@ export function StoryDraftEditor({ id }: { id: string }) {
           <fieldset disabled={busy || !translationReady}><legend className="sr-only">Translation draft</legend>
             <label htmlFor="translation-language">Translation language</label>
             <select id="translation-language" value={target} onChange={event => { setTarget(event.target.value as LanguageCode); setSpeakerChecked(false); setMessage(""); }}>
-              {LANGUAGES.filter(language => language.code !== draft.language).map(language => <option key={language.code} value={language.code}>{language.name}</option>)}
+              {LANGUAGES.filter(language => language.code !== draft.language).map(language => <option key={language.code} value={language.code}>{languageLabel(language)}</option>)}
             </select>
+            {(FEATURES.aiTranslation || FEATURES.aiVoice) && aiQualityNotice(target) && <p className="draft-notice" data-testid="ai-quality-notice"><strong>AI quality untested.</strong> {aiQualityNotice(target)}</p>}
             {FEATURES.aiTranslation && <>
               <button className="retry-button secondary-button" type="button" disabled={busy || unsaved || !draft.originalApproved || transcript.length > 6000} onClick={() => void generateDraft()}>AI draft</button>
               <p className="draft-notice">Save and approve the original first. AI drafts support up to 6,000 source characters and incur an API charge. Save your edits before generating a replacement.</p>
