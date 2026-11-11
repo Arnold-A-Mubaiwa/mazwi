@@ -22,6 +22,7 @@ export default defineConfig({
         ASPNETCORE_ENVIRONMENT: "Testing",
         ConnectionStrings__Mazwi: process.env.MAZWI_TEST_CONNECTION_STRING ?? "",
         MediaStorage__Root: resolve("../.local/browser-media"),
+        Mazwi__OutboxPath: resolve("../.local/browser-outbox"),
         Mazwi__AccountRequestsPerMinute: "1000",
       },
     },

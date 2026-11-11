@@ -2,7 +2,8 @@ using Mazwi.Domain;
 
 namespace Mazwi.Application;
 
-public sealed class ArtistAccountService(IArtistRepository artists, IStoryRepository stories, IPasswordHasher hasher) : IArtistAccountService
+public sealed class ArtistAccountService(IArtistRepository artists, IStoryRepository stories, IPasswordHasher hasher, IAccountRecoveryService recovery)
+    : IArtistAccountService
 {
     public async Task<ArtistDto> SignUpAsync(string email, string password, CancellationToken cancellationToken)
     {
@@ -11,6 +12,15 @@ public sealed class ArtistAccountService(IArtistRepository artists, IStoryReposi
         if (!await artists.AddAsync(artist, cancellationToken))
         {
             throw new AccountExistsException();
+        }
+
+        // The account works straight away; a failed email only means the artist asks for another link later.
+        try
+        {
+            await recovery.SendVerificationAsync(artist.Id, cancellationToken);
+        }
+        catch (Exception failure) when (failure is not OperationCanceledException)
+        {
         }
 
         return ArtistDto.From(artist);

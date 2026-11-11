@@ -26,7 +26,7 @@ test("SubmitAccount_Success_PostsJsonAndReturnsArtist", async (t) => {
     assert.deepEqual(JSON.parse(options.body), { email: "rudo@example.com", password: "long password" });
     return Response.json({ id: "artist", email: "rudo@example.com" });
   });
-  assert.deepEqual(await submitAccount("signup", " rudo@example.com ", "long password", controller.signal), { id: "artist", email: "rudo@example.com" });
+  assert.deepEqual(await submitAccount("signup", " rudo@example.com ", "long password", controller.signal), { id: "artist", email: "rudo@example.com", emailVerified: false });
 });
 test("SubmitAccount_Failures_ShowSafeMessages", async (t) => {
   const cases = [[401, /do not match/], [409, /already exists/], [429, /Too many attempts/], [500, /couldn.t reach/]];

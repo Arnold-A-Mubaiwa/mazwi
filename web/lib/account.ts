@@ -1,4 +1,4 @@
-export type Artist = { id: string; email: string };
+export type Artist = { id: string; email: string; emailVerified?: boolean };
 export type AccountMode = "signin" | "signup";
 
 export function accountError(email: string, password: string, mode: AccountMode): string | null {
@@ -18,7 +18,7 @@ export function safeNext(value: unknown): string {
 function readArtist(value: unknown): Artist {
   const artist = value as Partial<Artist> | null;
   if (!artist || typeof artist.id !== "string" || typeof artist.email !== "string") throw new Error("The API returned an unexpected account.");
-  return { id: artist.id, email: artist.email };
+  return { id: artist.id, email: artist.email, emailVerified: artist.emailVerified === true };
 }
 
 export async function submitAccount(mode: AccountMode, email: string, password: string, signal?: AbortSignal): Promise<Artist> {

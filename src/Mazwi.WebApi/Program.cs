@@ -25,10 +25,11 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     options.Events.OnRedirectToAccessDenied = context => WriteStatus(context.Response, StatusCodes.Status403Forbidden);
     options.Events.OnValidatePrincipal = async context =>
     {
-        // A session whose account no longer exists is signed out.
+        // A session whose account no longer exists, or whose password has since changed, is signed out.
         Guid artistId = context.Principal?.ArtistId() ?? Guid.Empty;
         IArtistAccountService accounts = context.HttpContext.RequestServices.GetRequiredService<IArtistAccountService>();
-        if (artistId == Guid.Empty || await accounts.GetAsync(artistId, context.HttpContext.RequestAborted) is null)
+        ArtistDto? artist = artistId == Guid.Empty ? null : await accounts.GetAsync(artistId, context.HttpContext.RequestAborted);
+        if (artist is null || artist.SecurityStamp != context.Principal!.Stamp())
         {
             context.RejectPrincipal();
         }
@@ -98,6 +99,14 @@ builder.Services.AddScoped<IStoryPlayRepository, StoryPlayRepository>();
 builder.Services.AddScoped<IStoryStatsService, StoryStatsService>();
 builder.Services.AddScoped<IStoryRemovalService, StoryRemovalService>();
 builder.Services.AddScoped<IAccountDeletionService, AccountDeletionService>();
+builder.Services.AddScoped<IAccountTokenRepository, AccountTokenRepository>();
+builder.Services.AddScoped<IAccountRecoveryService, AccountRecoveryService>();
+builder.Services.AddSingleton(_ => new AccountLinks(builder.Configuration["Mazwi:PublicBaseUrl"] ?? "http://127.0.0.1:3000"));
+// Development email: messages are written as .eml files. A real provider replaces this adapter before hosting.
+builder.Services.AddSingleton<IEmailSender>(_ => new LocalOutboxEmailSender(
+    builder.Configuration["Mazwi:OutboxPath"] ?? (builder.Environment.IsEnvironment("Testing")
+        ? Path.Combine(Path.GetTempPath(), "mazwi-test-outbox")
+        : Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "../../.local/outbox")))));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IStoryMediaStore>(_ => new LocalStoryMediaStore(
     builder.Configuration["MediaStorage:Root"] ?? Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "../../.local/media"))));

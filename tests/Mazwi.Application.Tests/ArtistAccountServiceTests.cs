@@ -8,13 +8,14 @@ public sealed class ArtistAccountServiceTests
     private readonly IArtistRepository _artists = Substitute.For<IArtistRepository>();
     private readonly IStoryRepository _stories = Substitute.For<IStoryRepository>();
     private readonly IPasswordHasher _hasher = Substitute.For<IPasswordHasher>();
+    private readonly IAccountRecoveryService _recovery = Substitute.For<IAccountRecoveryService>();
     private readonly ArtistAccountService _service;
 
     public ArtistAccountServiceTests()
     {
         _hasher.Hash(Arg.Any<NewPassword>()).Returns(call => new PasswordHash($"hashed:{call.Arg<NewPassword>().Value}"));
         _hasher.Verify(Arg.Any<PasswordHash>(), Arg.Any<string>()).Returns(call => call.Arg<PasswordHash>().Value == $"hashed:{call.Arg<string>()}");
-        _service = new ArtistAccountService(_artists, _stories, _hasher);
+        _service = new ArtistAccountService(_artists, _stories, _hasher, _recovery);
     }
 
     private Artist Existing() => Artist.Register(new EmailAddress("rudo@example.com"), new NewPassword("long password"), _hasher);
@@ -115,5 +116,29 @@ public sealed class ArtistAccountServiceTests
         // Assert
         Assert.Null(result);
         _hasher.Received(1).Hash(Arg.Any<NewPassword>());
+    }
+
+    [Fact]
+    public async Task SignUpAsync_NewAccount_SendsVerificationEmail()
+    {
+        // Arrange
+        _artists.AddAsync(Arg.Any<Artist>(), Arg.Any<CancellationToken>()).Returns(true);
+        // Act
+        ArtistDto artist = await _service.SignUpAsync("rudo@example.com", "long password", CancellationToken.None);
+        // Assert
+        Assert.False(artist.EmailVerified);
+        await _recovery.Received(1).SendVerificationAsync(artist.Id, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SignUpAsync_VerificationEmailFails_StillCreatesTheAccount()
+    {
+        // Arrange
+        _artists.AddAsync(Arg.Any<Artist>(), Arg.Any<CancellationToken>()).Returns(true);
+        _recovery.SendVerificationAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns<bool>(_ => throw new IOException("outbox unavailable"));
+        // Act
+        ArtistDto artist = await _service.SignUpAsync("rudo@example.com", "long password", CancellationToken.None);
+        // Assert
+        Assert.Equal("rudo@example.com", artist.Email);
     }
 }

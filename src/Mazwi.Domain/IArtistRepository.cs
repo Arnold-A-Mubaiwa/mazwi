@@ -7,4 +7,6 @@ public interface IArtistRepository
     Task<Artist?> GetAsync(Guid id, CancellationToken cancellationToken);
     Task<Artist?> FindByEmailAsync(EmailAddress email, CancellationToken cancellationToken);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken);
+    // Saves the password hash, security stamp and email verification; used together with marking the token used.
+    Task SaveSecurityAsync(Artist artist, AccountToken? usedToken, CancellationToken cancellationToken);
 }
