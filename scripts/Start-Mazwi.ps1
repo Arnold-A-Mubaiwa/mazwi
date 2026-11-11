@@ -47,7 +47,7 @@ if ($listeners.Count) {
 if ($Demo) {
     # The demo never touches the databases, recordings or emails configured in .env.
     . (Join-Path $PSScriptRoot 'Demo-Postgres.ps1')
-    $env:ConnectionStrings__Mazwi = Start-MazwiDemoDatabase $workspaceRoot
+    $env:ConnectionStrings__Mazwi = Start-MazwiDemoDatabase $workspaceRoot | Select-Object -Last 1
     $env:MediaStorage__Root = Join-Path $workspaceRoot '.local/demo-media'
     $env:Mazwi__OutboxPath = Join-Path $workspaceRoot '.local/demo-outbox'
     $env:Mazwi__Moderators = 'demo-artist@mazwi.test'

@@ -15,6 +15,7 @@ function Invoke-MazwiDemoTool([string]$Executable, [string[]]$Arguments, [string
     # Wait for the tool only (not for a server it starts), and keep its output in log files.
     $tool = Start-Process -FilePath $Executable -ArgumentList $Arguments -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $LogFolder "$Label.out.log") -RedirectStandardError (Join-Path $LogFolder "$Label.err.log")
+    $null = $tool.Handle  # Without reading the handle now, PowerShell 5.1 reports no exit code later.
     if (-not $tool.WaitForExit(120000)) { throw "$Label did not finish. See .local/demo-postgres/logs." }
     if ($tool.ExitCode -ne 0) { throw "$Label failed. See .local/demo-postgres/logs." }
 }
@@ -34,7 +35,8 @@ function Start-MazwiDemoDatabase([string]$WorkspaceRoot) {
         New-Item -ItemType Directory -Path $download -Force | Out-Null
         $jar = Join-Path $download 'postgres.zip'
         $url = "https://repo1.maven.org/maven2/io/zonky/test/postgres/embedded-postgres-binaries-windows-amd64/$($script:DemoPgVersion)/embedded-postgres-binaries-windows-amd64-$($script:DemoPgVersion).jar"
-        Write-Output "Downloading a portable PostgreSQL $($script:DemoPgVersion) for the demo (about 25 MB, once)."
+        # Write-Host, not Write-Output: anything written to the output becomes part of this function's return value.
+        Write-Host "Downloading a portable PostgreSQL $($script:DemoPgVersion) for the demo (about 25 MB, once)."
         $ProgressPreference = 'SilentlyContinue'
         Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $jar
         if ((Get-FileHash -LiteralPath $jar -Algorithm SHA256).Hash -ne $script:DemoPgSha256) {
