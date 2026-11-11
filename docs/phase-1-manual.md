@@ -53,7 +53,7 @@ Artist/community/country credit is visible. Next/previous, focused arrow keys an
 | --- | --- |
 | Private upload, PostgreSQL metadata, local studio | Automatic transcription and language-quality evaluation |
 | Manual transcript and translation editing | AI translation and generated voices (API credit required) |
-| Artist-provided translated recordings | ffmpeg dubbing/export and timed subtitles |
+| Artist-provided translated recordings | ffmpeg dubbing/export (timed subtitles: docs/subtitles.md) |
 | Explicit approval, stale-review protection and revocation | Hosted access control (artist accounts: docs/accounts.md) |
 | Approved feed/story playback, saved language preference, credits | Story Twins, statistics, voice stamps/cloning, PWA sharing and Android bubble |
 

@@ -3,6 +3,7 @@ namespace Mazwi.Domain;
 public sealed class Story
 {
     private readonly Dictionary<string, TranslationDraft> _translations = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, SubtitleTiming> _timings = new(StringComparer.Ordinal);
     public Guid Id { get; }
     public StoryDetails Details { get; }
     public StoryRecording Recording { get; }
@@ -14,6 +15,7 @@ public sealed class Story
     public bool OriginalApproved { get; private set; }
     public StoryText? Transcript { get; private set; }
     public IReadOnlyCollection<TranslationDraft> Translations => _translations.Values.ToArray();
+    public IReadOnlyDictionary<string, SubtitleTiming> SubtitleTimings => new Dictionary<string, SubtitleTiming>(_timings, StringComparer.Ordinal);
 
     private Story(Guid id, StoryDetails details, StoryRecording recording, DateTimeOffset permissionRecordedAt, Guid? ownerId)
     {
@@ -65,6 +67,7 @@ public sealed class Story
         }
 
         Transcript = value;
+        _timings.Remove(Details.Language);
         OriginalApproved = false;
         foreach (TranslationDraft draft in Translations)
         {
@@ -100,6 +103,11 @@ public sealed class Story
         if (!requireReview && previous?.Text == draft.Text && previous.Notes.Items.SequenceEqual(notes.Items))
         {
             return previous;
+        }
+
+        if (previous?.Text != draft.Text)
+        {
+            _timings.Remove(draft.Language);
         }
 
         draft = new TranslationDraft(draft.Language, draft.Text.Value, previous?.Recording, notes: notes);
@@ -156,6 +164,7 @@ public sealed class Story
     private void ReplaceRecording(TranslationDraft draft, TranslatedRecording recording)
     {
         _translations[draft.Language] = new TranslationDraft(draft.Language, draft.Text.Value, recording, notes: draft.Notes);
+        _timings.Remove(draft.Language);
         ReviewVersion = Guid.NewGuid();
     }
 
@@ -238,20 +247,58 @@ public sealed class Story
         TranslationDraft? translation = Translations.SingleOrDefault(d => d.Language == language && d.IsApproved);
         if (translation is null)
         {
-            return new(Details.Language, Details.Language, Transcript, Id, Recording);
+            return new(Details.Language, Details.Language, Transcript, Id, Recording, Cues: CuesFor(Details.Language, Transcript));
         }
 
         if (!originalAudio && translation.Recording is TranslatedRecording media)
         {
-            return new(translation.Language, translation.Language, translation.Text, media.Id, media.File, media.Voice, translation.SpeakerChecked);
+            return new(translation.Language, translation.Language, translation.Text, media.Id, media.File, media.Voice, translation.SpeakerChecked,
+                CuesFor(translation.Language, translation.Text));
         }
 
-        return new(translation.Language, Details.Language, translation.Text, Id, Recording, SpeakerChecked: translation.SpeakerChecked);
+        // A translation's timing follows the audio the artist timed it against: its own recording if it has one, otherwise the original.
+        IReadOnlyList<SubtitleCue>? cues = translation.Recording is null ? CuesFor(translation.Language, translation.Text) : null;
+        return new(translation.Language, Details.Language, translation.Text, Id, Recording, SpeakerChecked: translation.SpeakerChecked, Cues: cues);
     }
+
+    private IReadOnlyList<SubtitleCue>? CuesFor(string language, StoryText text) =>
+        _timings.TryGetValue(language, out SubtitleTiming? timing) ? timing.Cues(text) : null;
+
+    // Timing is part of what the artist approves: saving it removes that language's approval, and for the original every approval.
+    public void SetSubtitleTiming(string language, SubtitleTiming timing, Guid expectedVersion)
+    {
+        ArgumentNullException.ThrowIfNull(timing);
+        EnsureVersion(expectedVersion);
+        StoryText text = TextFor(language) ?? throw new DomainException("Save this language's text before timing its subtitles.");
+        if (!timing.Fits(text))
+        {
+            throw new DomainException($"Time every line: the text has {SubtitleTiming.Lines(text).Count} lines but {timing.StartsMs.Count} times were sent.");
+        }
+
+        _timings[language] = timing;
+        if (language == Details.Language)
+        {
+            OriginalApproved = false;
+            foreach (TranslationDraft draft in Translations)
+            {
+                _translations[draft.Language] = new TranslationDraft(draft.Language, draft.Text.Value, draft.Recording, notes: draft.Notes);
+            }
+        }
+        else
+        {
+            TranslationDraft draft = _translations[language];
+            _translations[language] = new TranslationDraft(language, draft.Text.Value, draft.Recording, notes: draft.Notes);
+        }
+
+        ReviewVersion = Guid.NewGuid();
+    }
+
+    private StoryText? TextFor(string language) =>
+        language == Details.Language ? Transcript : _translations.TryGetValue(language, out TranslationDraft? draft) ? draft.Text : null;
 
     public static Story Rehydrate(Guid id, StoryDetails details, StoryRecording recording, DateTimeOffset permissionRecordedAt,
         string? transcript = null, IEnumerable<TranslationDraft>? translations = null, Guid? reviewVersion = null, bool originalApproved = false,
-        Guid? ownerId = null)
+        Guid? ownerId = null, IEnumerable<KeyValuePair<string, SubtitleTiming>>? timings = null)
     {
         var story = new Story(id, details, recording, permissionRecordedAt, ownerId);
         if (transcript is not null)
@@ -273,6 +320,17 @@ public sealed class Story
         if (!originalApproved && story.Translations.Any(draft => draft.IsApproved))
         {
             throw new DomainException("Translations require an approved original.");
+        }
+
+        foreach ((string language, SubtitleTiming timing) in timings ?? [])
+        {
+            StoryText text = story.TextFor(language) ?? throw new DomainException("Subtitle timing requires saved text.");
+            if (!timing.Fits(text))
+            {
+                throw new DomainException("Subtitle timing does not match its text.");
+            }
+
+            story._timings[language] = timing;
         }
 
         story.OriginalApproved = originalApproved;

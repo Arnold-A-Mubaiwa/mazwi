@@ -197,3 +197,12 @@ h3 { font-size: 35px; line-height: 1.14; letter-spacing: -1px; margin: 0 0 15px;
 .account-form { max-width: 460px; }
 .account-switch { margin-top: 26px; font-size: 14px; color: var(--muted); }
 .account-form { margin-top: 32px; }
+.subtitle-line { min-height: 2.6em; margin-top: 12px; padding: 10px 14px; background: rgba(0, 0, 0, 0.45); border-left: 3px solid var(--ochre); font-size: 18px; line-height: 1.4; }
+.subtitle-timer { margin: 24px 0; border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; }
+.subtitle-timer summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+.subtitle-timer fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.subtitle-lines { padding-left: 20px; display: grid; gap: 12px; }
+.subtitle-lines label, .subtitle-timer label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.subtitle-line-text { font-size: 15px; color: var(--paper); overflow-wrap: anywhere; }
+.subtitle-timer input { width: 8em; font: inherit; color: var(--paper); background: #22261d; border: 1px solid #414735; border-radius: 4px; padding: 8px; }
+.subtitle-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }

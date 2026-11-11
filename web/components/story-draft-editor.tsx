@@ -7,6 +7,7 @@ import { getStoryDraft, saveStoryText, approveStory, uploadTranslationRecording,
 import { FEATURES } from "@/lib/config";
 import { recordingError } from "@/lib/stories";
 import { RecordingPlayer } from "./recording-player";
+import { SubtitleTimer } from "./subtitle-timer";
 
 export function StoryDraftEditor({ id }: { id: string }) {
   const [draft, setDraft] = useState<StoryDraft | null>(null);
@@ -174,6 +175,10 @@ export function StoryDraftEditor({ id }: { id: string }) {
             <button className="retry-button" type="submit">Save original transcript</button>
           </fieldset>
         </form>
+        {draft.transcript && transcript === draft.transcript && <SubtitleTimer key={`${draft.language}-${draft.reviewVersion}`} storyId={id} language={draft.language}
+          languageName={originalLanguage ?? draft.language} original text={draft.transcript} timing={draft.originalTiming} reviewVersion={draft.reviewVersion}
+          src={`/api/stories/${id}/recordings/${draft.language}?v=${draft.reviewVersion}`} extension={draft.recordingExtension} recordingLabel={`Original ${originalLanguage} recording for timing`}
+          disabled={busy || unsaved} onSaved={(updated, text) => { setDraft(updated); setSaveError(null); setMessage(text); }} onError={setSaveError} />}
         <button className="retry-button secondary-button" disabled={busy || unsaved || !draft.transcript || draft.originalApproved} onClick={() => void approve(draft.language)}>{draft.originalApproved ? "Original is approved" : "Approve original"}</button>
       </section>
       <section className="draft-card" aria-labelledby="translation-heading">
@@ -217,6 +222,12 @@ export function StoryDraftEditor({ id }: { id: string }) {
             <label className="permission-field"><input type="checkbox" name="permission" value="true" required /> I own this translated recording or have permission to upload and share it.</label>
             <button className="retry-button" type="submit">Save translated recording</button>
           </fieldset></form>
+          {targetSaved.text === targetText && <SubtitleTimer key={`${target}-${draft.reviewVersion}`} storyId={id} language={target} languageName={targetName} original={false}
+            text={targetSaved.text} timing={targetSaved.timing} reviewVersion={draft.reviewVersion}
+            src={targetSaved.recordingId ? `/api/stories/${id}/recordings/${target}?v=${draft.reviewVersion}` : `/api/stories/${id}/recordings/${draft.language}?v=${draft.reviewVersion}`}
+            extension={targetSaved.recordingId ? (targetSaved.recordingExtension ?? ".mp4") : draft.recordingExtension}
+            recordingLabel={targetSaved.recordingId ? `${targetName} recording for timing` : `Original ${originalLanguage} recording for timing ${targetName} text`}
+            disabled={busy || unsaved} onSaved={(updated, text) => { setDraft(updated); setSaveError(null); setMessage(text); }} onError={setSaveError} />}
           {targetSaved.status !== "approved" && <><label className="permission-field"><input type="checkbox" checked={speakerChecked} disabled={busy || unsaved} onChange={event => setSpeakerChecked(event.target.checked)} /> I speak {targetName} and checked this translation</label>
           <p className="draft-notice">You can approve without speaking {targetName}. Viewers will then see that no {targetName} speaker checked it.</p></>}
           <button className="retry-button secondary-button" disabled={busy || unsaved || !draft.originalApproved || targetSaved.status === "approved"} onClick={() => void approve(target)}>{targetSaved.status === "approved" ? "Translation is approved" : "Approve translation"}</button>
@@ -227,6 +238,6 @@ export function StoryDraftEditor({ id }: { id: string }) {
     {busy && <p className="draft-feedback" role="status">{aiPending === "voice" ? "Generating an AI voice…" : aiPending === "transcript" ? "Transcribing the original recording…" : aiPending ? "Creating an AI translation draft…" : "Saving your words…"}</p>}
     {message && <p className="draft-feedback" role="status">{message}</p>}
     {saveError && <p className="upload-error" role="alert">{saveError}</p>}
-    <p className="draft-privacy-note">Nothing is approved automatically. Save and review every change before approval. AI transcription sends your original recording, AI drafting your saved transcript, and AI voice your saved translation to OpenAI only when you request it. This local demo has no accounts; keep it on your own computer.</p>
+    <p className="draft-privacy-note">Nothing is approved automatically. Save and review every change before approval. AI transcription sends your original recording, AI drafting your saved transcript, and AI voice your saved translation to OpenAI only when you request it. Only you can edit or approve your stories.</p>
   </>;
 }
