@@ -1,4 +1,4 @@
-export type StudioStory = { id: string; title: string; artistName: string; community: string; language: string; status: "unpublished" | "published" };
+export type StudioStory = { id: string; title: string; artistName: string; community: string; language: string; status: "unpublished" | "published"; hiddenForReview?: boolean };
 export type StudioPage = { items: StudioStory[]; nextOffset: number | null };
 export async function getStudio(offset = 0, signal?: AbortSignal): Promise<StudioPage> {
   const response = await fetch(`/api/studio?offset=${offset}&limit=20`, { cache: "no-store", signal });

@@ -5,6 +5,7 @@ using Mazwi.Domain;
 using Mazwi.Repository;
 using Mazwi.WebApi;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Npgsql;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -35,7 +36,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         }
     };
 });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options => options.AddPolicy(ModeratorRequirement.Policy, policy => policy.RequireAuthenticatedUser().AddRequirements(new ModeratorRequirement())));
+builder.Services.AddScoped<IAuthorizationHandler, ModeratorHandler>();
 // Hosted behind a reverse proxy: the cookie is always Secure, and only listed proxies may set the client address and scheme.
 builder.Services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)
     .Configure<IConfiguration>((options, configuration) =>
@@ -55,6 +57,15 @@ builder.Services.AddRateLimiter(options =>
         _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = context.RequestServices.GetRequiredService<IConfiguration>().GetValue("Mazwi:AccountRequestsPerMinute", 10),
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+        }));
+    // Per visitor address (the real visitor when hosted behind a trusted proxy).
+    options.AddPolicy(ReportLimits.Policy, context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "local",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = context.RequestServices.GetRequiredService<IConfiguration>().GetValue("Mazwi:ReportsPerMinute", 10),
             Window = TimeSpan.FromMinutes(1),
             QueueLimit = 0,
         }));
@@ -112,6 +123,9 @@ builder.Services.AddScoped<IStoryRemovalService, StoryRemovalService>();
 builder.Services.AddScoped<IAccountDeletionService, AccountDeletionService>();
 builder.Services.AddScoped<IAccountTokenRepository, AccountTokenRepository>();
 builder.Services.AddScoped<IAccountRecoveryService, AccountRecoveryService>();
+builder.Services.AddScoped<IStoryReportRepository, StoryReportRepository>();
+builder.Services.AddScoped<IStoryReportService, StoryReportService>();
+builder.Services.AddScoped<IModerationService, ModerationService>();
 builder.Services.AddSingleton(_ => new AccountLinks(builder.Configuration["Mazwi:PublicBaseUrl"] ?? "http://127.0.0.1:3000"));
 // Development email: messages are written as .eml files. A real provider replaces this adapter before hosting.
 builder.Services.AddSingleton<IEmailSender>(_ => new LocalOutboxEmailSender(

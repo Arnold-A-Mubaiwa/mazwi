@@ -13,6 +13,9 @@ public sealed class Story
     public string Status => OriginalApproved ? "published" : "unpublished";
     public Guid ReviewVersion { get; private set; } = Guid.NewGuid();
     public bool OriginalApproved { get; private set; }
+    // Set by moderators after a report: the story leaves the feed until restored, whatever its approvals say.
+    public bool HiddenForReview { get; private set; }
+    public bool CanBeReported => OriginalApproved && !HiddenForReview;
     public StoryText? Transcript { get; private set; }
     public IReadOnlyCollection<TranslationDraft> Translations => _translations.Values.ToArray();
     public IReadOnlyDictionary<string, SubtitleTiming> SubtitleTimings => new Dictionary<string, SubtitleTiming>(_timings, StringComparer.Ordinal);
@@ -239,7 +242,7 @@ public sealed class Story
             throw new DomainException("Choose a supported viewing language.");
         }
 
-        if (!OriginalApproved || Transcript is null)
+        if (!OriginalApproved || Transcript is null || HiddenForReview)
         {
             return null;
         }
@@ -260,6 +263,10 @@ public sealed class Story
         IReadOnlyList<SubtitleCue>? cues = translation.Recording is null ? CuesFor(translation.Language, translation.Text) : null;
         return new(translation.Language, Details.Language, translation.Text, Id, Recording, SpeakerChecked: translation.SpeakerChecked, Cues: cues);
     }
+
+    public void HideForReview() => HiddenForReview = true;
+
+    public void RestoreAfterReview() => HiddenForReview = false;
 
     // Takes the story out of the feed by removing every approval. The artist can approve again later.
     public void Unpublish(Guid expectedVersion)
@@ -333,7 +340,7 @@ public sealed class Story
 
     public static Story Rehydrate(Guid id, StoryDetails details, StoryRecording recording, DateTimeOffset permissionRecordedAt,
         string? transcript = null, IEnumerable<TranslationDraft>? translations = null, Guid? reviewVersion = null, bool originalApproved = false,
-        Guid? ownerId = null, IEnumerable<KeyValuePair<string, SubtitleTiming>>? timings = null)
+        Guid? ownerId = null, IEnumerable<KeyValuePair<string, SubtitleTiming>>? timings = null, bool hiddenForReview = false)
     {
         var story = new Story(id, details, recording, permissionRecordedAt, ownerId);
         if (transcript is not null)
@@ -369,6 +376,7 @@ public sealed class Story
         }
 
         story.OriginalApproved = originalApproved;
+        story.HiddenForReview = hiddenForReview;
         story.ReviewVersion = reviewVersion ?? Guid.NewGuid();
         if (story.ReviewVersion == Guid.Empty)
         {
