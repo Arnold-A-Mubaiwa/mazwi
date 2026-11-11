@@ -14,6 +14,7 @@ SDK 10.0.402 is pinned in global.json. Quality tooling also uses Node.js.
 - Install: `dotnet restore Mazwi.sln --configfile NuGet.Config`
 - Run: `./scripts/Start-Mazwi.ps1` (loads ignored .env, builds, migrates and checks local readiness).
 - Stop: `./scripts/Stop-Mazwi.ps1` before builds or quality/browser checks; only helper-managed processes are stopped.
+- Claim stories saved before accounts (once, after signing up): `./scripts/Claim-Stories.ps1 -Email <your account email>`.
 - Build: `dotnet build`
 - Lint: `dotnet format --verify-no-changes`
 - Test: `dotnet test`

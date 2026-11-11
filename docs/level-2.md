@@ -39,7 +39,7 @@ Any edit to text, timing or a recording removes approval until you approve again
 Migrations 008–010 run automatically when you start Mazwi (`./scripts/Start-Mazwi.ps1`). Stories saved before accounts belong to nobody until you claim them:
 
 1. Start Mazwi and create your account at `/signup`.
-2. With the root `.env` loaded, run once: `dotnet run --project src/Mazwi.WebApi --no-launch-profile -- --claim-stories you@example.com`
+2. From the repository root in PowerShell, run once: `./scripts/Claim-Stories.ps1 -Email you@example.com`
 3. Your stories appear in Studio again.
 
 This also claims the synthetic browser-test stories from runs before accounts existed, because the test and app databases are still shared.

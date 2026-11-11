@@ -150,6 +150,10 @@ test("Level2_SignInUploadVideoTimeTranslateVoiceApprove_ViewerWatchesDubbedWithS
   await page.locator(".dubbed-player video").evaluate((element: HTMLVideoElement) => { element.pause(); element.currentTime = 1.5; });
   await expect(page.getByTestId("subtitle-line")).toHaveText("Umgca wesibini.");
   await page.screenshot({ path: "../.local/mazwi-level-2-viewer.png", fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: "../.local/mazwi-level-2-viewer-mobile.png", fullPage: true });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.setViewportSize({ width: 1280, height: 720 });
 
   // Sharing uses the share sheet with the story link.
   await page.getByRole("button", { name: "Share this story", exact: true }).click();
@@ -160,4 +164,7 @@ test("Level2_SignInUploadVideoTimeTranslateVoiceApprove_ViewerWatchesDubbedWithS
   await page.goto("/studio");
   await page.getByLabel("Filter this page", { exact: true }).fill(title);
   await expect(page.locator(".studio-card").filter({ hasText: title }).getByTestId("studio-plays")).toHaveText("1 play · 1 this week");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator(".studio-card").filter({ hasText: title }).screenshot({ path: "../.local/mazwi-level-2-studio-mobile.png" });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
