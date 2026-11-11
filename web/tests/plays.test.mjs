@@ -63,3 +63,20 @@ test("PlaysSummary_CountsAndLanguages_ReadNaturally", () => {
   assert.equal(playsSummary({ storyId: "a", plays: 1200, playsLast7Days: 5, languages: [{ language: "xh", plays: 1000, playsLast7Days: 5 }, { language: "sn", plays: 200, playsLast7Days: 0 }] }, name),
     "1,200 plays · 5 this week · isiXhosa 1,000 · Shona 200");
 });
+test("PlayTracker_ShortRecordingHeardToTheEnd_CountsOnce", () => {
+  let plays = 0;
+  const tracker = createPlayTracker(() => { plays += 1; });
+  for (let ms = 0; ms <= 2000; ms += 250) tracker.update(ms, true);
+  tracker.finish();
+  tracker.finish();
+  assert.equal(plays, 1);
+});
+test("PlayTracker_SeekedToTheEndWithoutListening_DoesNotCount", () => {
+  let plays = 0;
+  const tracker = createPlayTracker(() => { plays += 1; });
+  tracker.update(0, true);
+  tracker.update(250, true);
+  tracker.update(9000, true);
+  tracker.finish();
+  assert.equal(plays, 0);
+});

@@ -3,11 +3,13 @@ import { LANGUAGES, type LanguageCode } from "./languages.ts";
 export const PLAY_THRESHOLD_MS = 3000;
 // Gaps larger than this between time updates are seeks or stalls, not listening.
 const MAX_STEP_MS = 1500;
+const MIN_FINISHED_MS = 1000;
 
 export type LanguagePlays = { language: LanguageCode; plays: number; playsLast7Days: number };
 export type StoryStats = { storyId: string; plays: number; playsLast7Days: number; languages: LanguagePlays[] };
 
-// Calls onPlay once, after the viewer has actually listened for the threshold. Seeking forward does not count.
+// Calls onPlay once: after the viewer has actually listened for the threshold, or listened through to the end of a
+// shorter recording (with at least a second heard, so seeking to the end does not count). Seeking forward never adds time.
 export function createPlayTracker(onPlay: () => void, threshold = PLAY_THRESHOLD_MS) {
   let listened = 0;
   let last: number | null = null;
@@ -21,6 +23,9 @@ export function createPlayTracker(onPlay: () => void, threshold = PLAY_THRESHOLD
       }
       last = currentMs;
       if (listened >= threshold) { done = true; onPlay(); }
+    },
+    finish() {
+      if (!done && listened >= MIN_FINISHED_MS) { done = true; onPlay(); }
     },
   };
 }

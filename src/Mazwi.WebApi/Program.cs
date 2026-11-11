@@ -116,10 +116,25 @@ if (args.Contains("--migrate", StringComparer.Ordinal))
 else if (claimIndex >= 0)
 {
     // Gives every story saved before accounts existed to the named account.
-    string email = claimIndex + 1 < args.Length ? args[claimIndex + 1] : throw new InvalidOperationException("Usage: --claim-stories <email>");
-    await using AsyncServiceScope scope = app.Services.CreateAsyncScope();
-    int claimed = await scope.ServiceProvider.GetRequiredService<IArtistAccountService>().ClaimUnownedStoriesAsync(email, CancellationToken.None);
-    Console.WriteLine($"Claimed {claimed} unowned stories.");
+    if (claimIndex + 1 >= args.Length)
+    {
+        Console.Error.WriteLine("Usage: --claim-stories <email of an existing account>");
+        Environment.ExitCode = 1;
+    }
+    else
+    {
+        await using AsyncServiceScope scope = app.Services.CreateAsyncScope();
+        try
+        {
+            int claimed = await scope.ServiceProvider.GetRequiredService<IArtistAccountService>().ClaimUnownedStoriesAsync(args[claimIndex + 1], CancellationToken.None);
+            Console.WriteLine($"Claimed {claimed} unowned stories.");
+        }
+        catch (DomainException failure)
+        {
+            Console.Error.WriteLine(failure.Message);
+            Environment.ExitCode = 1;
+        }
+    }
 }
 else
 {

@@ -11,13 +11,13 @@ Issue #33 adds artist accounts. Only a signed-in artist can upload, and only a s
 
 ## Stories saved before accounts
 
-Migration 008 gives every existing story an empty owner. Nobody can edit those stories until they are claimed, but approved ones stay in the feed. After creating your account, claim them once (with the root `.env` loaded, as `Start-Mazwi.ps1` does):
+Migration 008 gives every existing story an empty owner. Nobody can edit those stories until they are claimed, but approved ones stay in the feed. After creating your account, claim them once from the repository root in PowerShell (the script loads the ignored `.env` like `Start-Mazwi.ps1`):
 
 ```powershell
-dotnet run --project src/Mazwi.WebApi --no-launch-profile -- --claim-stories you@example.com
+./scripts/Claim-Stories.ps1 -Email you@example.com
 ```
 
-It prints how many stories it claimed and only claims stories that have no owner. A command is used instead of "first account claims everything" because the test database is shared with the local app, and a test account must never claim real stories.
+It prints how many stories it claimed and only claims stories that have no owner. An unknown or invalid email prints a one-line error and exits with code 1. Under the hood it runs the API with `--claim-stories <email>`. A command is used instead of "first account claims everything" because the test database is shared with the local app, and a test account must never claim real stories.
 
 ## How it works
 
