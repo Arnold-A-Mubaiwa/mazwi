@@ -221,3 +221,8 @@ h3 { font-size: 35px; line-height: 1.14; letter-spacing: -1px; margin: 0 0 15px;
 .verify-banner p { margin: 0 0 8px; }
 .account-sent { max-width: 520px; line-height: 1.6; }
 .account-sent code { overflow-wrap: anywhere; }
+.report-toggle { margin-top: 8px; }
+.report-form { margin-top: 16px; }
+.report-form fieldset { border: 1px solid var(--line); border-radius: 4px; padding: 14px; min-width: 0; }
+.report-form select, .report-form textarea { width: 100%; font: inherit; color: var(--paper); background: #22261d; border: 1px solid #414735; border-radius: 4px; padding: 10px; margin: 6px 0 12px; }
+.moderation-notes { font-size: 13px; color: var(--muted); padding-left: 18px; overflow-wrap: anywhere; }

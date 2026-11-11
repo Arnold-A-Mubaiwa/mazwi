@@ -40,7 +40,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
         StoryRow? row = await connection.QuerySingleOrDefaultAsync<StoryRow>(new CommandDefinition("""
             SELECT s.id, s.title, s.artist_name AS ArtistName, s.community, s.country, s.story_type AS Type,
                 s.original_language AS Language, s.recording_extension AS Extension, s.recording_bytes AS Bytes,
-                s.permission_recorded_at AS PermissionRecordedAt, s.transcript, s.review_version AS ReviewVersion, s.owner_id AS OwnerId,
+                s.permission_recorded_at AS PermissionRecordedAt, s.transcript, s.review_version AS ReviewVersion, s.owner_id AS OwnerId, s.hidden_for_review AS HiddenForReview,
                 EXISTS (SELECT 1 FROM story_approvals a WHERE a.story_id = s.id AND a.language = s.original_language) AS OriginalApproved
             FROM stories s WHERE s.id = @Id
             """, new { Id = id }, transaction, cancellationToken: cancellationToken));
@@ -64,7 +64,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
             drafts.Select(d => new TranslationDraft(d.Language, d.Text,
                 d.MediaId is Guid mediaId ? new TranslatedRecording(mediaId, new StoryRecording(string.Concat("recording", d.MediaExtension), d.MediaBytes!.Value), d.MediaVoice) : null,
                 d.IsApproved, new TranslationNotes(d.Notes), d.SpeakerChecked)), row.ReviewVersion, row.OriginalApproved, row.OwnerId,
-            timings.Select(t => KeyValuePair.Create(t.Language, new SubtitleTiming(t.StartsMs, t.EndMs))).ToArray());
+            timings.Select(t => KeyValuePair.Create(t.Language, new SubtitleTiming(t.StartsMs, t.EndMs))).ToArray(), row.HiddenForReview);
     }
 
     public async Task SaveSubtitleTimingAsync(Story story, string language, Guid expectedVersion, CancellationToken cancellationToken)
@@ -91,6 +91,15 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
         await connection.ExecuteAsync(new CommandDefinition("UPDATE stories SET review_version = @ReviewVersion WHERE id = @Id",
             new { story.Id, story.ReviewVersion }, transaction, cancellationToken: cancellationToken));
         await transaction.CommitAsync(cancellationToken);
+    }
+
+    // Moderation does not change the artist's content, so the review version is left alone.
+    public async Task SaveHiddenForReviewAsync(Story story, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(story);
+        await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await connection.ExecuteAsync(new CommandDefinition("UPDATE stories SET hidden_for_review = @HiddenForReview WHERE id = @Id",
+            new { story.Id, story.HiddenForReview }, cancellationToken: cancellationToken));
     }
 
     public async Task SaveUnpublishAsync(Story story, Guid expectedVersion, CancellationToken cancellationToken)
@@ -275,7 +284,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
 
         await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken);
         IEnumerable<Guid> ids = await connection.QueryAsync<Guid>(new CommandDefinition("""
-            SELECT s.id FROM stories s WHERE NOT @ApprovedOnly OR
+            SELECT s.id FROM stories s WHERE NOT @ApprovedOnly OR NOT s.hidden_for_review AND
                 EXISTS (SELECT 1 FROM story_approvals a WHERE a.story_id = s.id AND a.language = s.original_language)
             ORDER BY s.permission_recorded_at DESC, s.id DESC LIMIT @Limit OFFSET @Offset
             """, new { ApprovedOnly = approvedOnly, Offset = offset, Limit = limit }, cancellationToken: cancellationToken));
@@ -348,6 +357,7 @@ public sealed class StoryRepository(NpgsqlDataSource dataSource) : IStoryReposit
     private sealed class StoryRow
     {
         public Guid? OwnerId { get; set; }
+        public bool HiddenForReview { get; set; }
         public Guid Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string ArtistName { get; set; } = string.Empty;

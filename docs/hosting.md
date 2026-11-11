@@ -46,7 +46,7 @@ With the forwarded address trusted, the sign-in and reset limit (10 a minute) ap
 - [ ] Separate production database with backups, and backups of `MediaStorage__Root` (recordings exist only there).
 - [ ] Ports 3000 and 5046 are closed to the outside, and only Caddy listens publicly.
 - [ ] `ASPNETCORE_ENVIRONMENT=Production`; secrets in the service environment, not in files in the repository.
-- [ ] Moderation is set up (#49) and someone is responsible for reports.
+- [ ] Set `Mazwi__Moderators` to the people responsible for reports (docs/moderation.md); they must confirm their email first.
 - [ ] Run the Level 1 live check with a real OpenAI key and confirm the costs.
 - [ ] Data protection keys (they encrypt session cookies) are kept across restarts, so sign-ins survive deploys. On a single server the default user-profile key folder works; with several servers, share them.
 

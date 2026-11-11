@@ -23,6 +23,8 @@ export default defineConfig({
         ConnectionStrings__Mazwi: process.env.MAZWI_TEST_CONNECTION_STRING ?? "",
         MediaStorage__Root: resolve("../.local/browser-media"),
         Mazwi__OutboxPath: resolve("../.local/browser-outbox"),
+        // The second fixture artist moderates in the browser tests (its email is confirmed by auth.setup.ts).
+        Mazwi__Moderators: "e2e-other-artist@mazwi.test",
         Mazwi__AccountRequestsPerMinute: "1000",
       },
     },

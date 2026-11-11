@@ -16,6 +16,6 @@ export function AccountLink() {
   }, [pathname]);
   if (artist === undefined) return null;
   if (!artist) return <Link href={`/signin?next=${encodeURIComponent(pathname)}`}>Sign in</Link>;
-  return <><Link href="/account">Account</Link><button type="button" className="header-signout" title={`Signed in as ${artist.email}`}
+  return <>{artist.isModerator && <Link href="/moderation">Moderation</Link>}<Link href="/account">Account</Link><button type="button" className="header-signout" title={`Signed in as ${artist.email}`}
     onClick={() => signOut().then(() => { setArtist(null); router.replace("/"); router.refresh(); }).catch(() => {})}>Sign out</button></>;
 }
