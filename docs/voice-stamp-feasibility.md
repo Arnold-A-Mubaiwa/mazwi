@@ -2,7 +2,7 @@
 
 **Question (#60):** can Mazwi "stamp" an artist's voice, so that an upload by a different artist using that voice is held for moderation, using an on-device speaker-recognition model?
 
-**Answer:** see [Recommendation](#recommendation).
+**Answer: no, not with today's open models. Stop. #61 is closed without code.** See [Recommendation](#recommendation).
 
 ## Decision rule (written before the full run)
 
@@ -50,7 +50,45 @@ In addition, the evaluation per-pair false-match rate must not clearly exceed th
 
 ## Results
 
-_Filled in from the final run; see below._
+The run used 2026-11-11 data and covered **55 speakers** with **595 clips** (OpenSLR 32: isiXhosa, Sesotho and Setswana; up to 12 clips per speaker).
+- **Calibration:** 20 stamped artists and 8 unstamped uploaders.
+- **Evaluation:** 19 stamped artists and 8 unstamped uploaders, all different people from the calibration half.
+- Each upload in the evaluation half was compared with 19 stamps: 133 own-voice pairs and 4,028 other-voice pairs.
+
+"Missed own voice" is measured at the threshold chosen on the calibration half for the operating point: 5% wrongly held at 500 stamps.
+
+**WeSpeaker ResNet34-LM** (256 dimensions, about 0.1 s CPU per clip, real-time factor 0.03):
+
+| Upload | Scoring | EER | Threshold | Missed own voice | Per-pair false match |
+| --- | --- | --- | --- | --- | --- |
+| clean | raw | 9.9% | 0.920 | **91.7%** (122/133) | 1/4028 |
+| clean | centred | **4.4%** | 0.830 | **98.5%** (131/133) | 0/4028 |
+| short 3 s | raw | 12.2% | 0.922 | 96.2% (128/133) | 1/4028 |
+| short 3 s | centred | 6.2% | 0.773 | 96.2% (128/133) | 0/4028 |
+| noisy 10 dB | raw | 36.1% | 0.801 | 100% (133/133) | 0/4028 |
+| noisy 10 dB | centred | 33.8% | 0.664 | 100% (133/133) | 0/4028 |
+| noisy 5 dB | raw / centred | 40.6% / 41.3% | ~0.7–0.8 | 100% | 0/4028 |
+
+**3D-Speaker CAM++** (512 dimensions, about 0.1 s CPU per clip) did worse on this data, in every condition and with both scorings:
+- EER 30–47%.
+- Missed own voice 99–100%.
+
+What the numbers mean:
+- **The models can tell people apart, but not strictly enough.** The best pair-by-pair error is 4.4% (EER). That would be good for "are these two clips the same person?". Voice Stamp, though, compares every upload with **every** stamp.
+- **At the EER threshold, an honest upload would be wrongly held** in about 1 − 0.956⁵⁰ ≈ **90%** of cases with only 50 stamped artists.
+- **Raising the threshold until honest uploads are safe misses the real artist's own voice 92–99% of the time**, even on clean studio audio from the same session.
+- **Noise breaks it completely.** At 10 dB SNR, roughly a busy street or a phone in a room, the EER is 34–36%.
+- The per-pair false-match target of 10⁻⁴ cannot be measured with 4,028 pairs, so the chosen thresholds are "above the highest other-voice score seen". This only makes the real picture **worse**, not better.
+
+**Decision rule result:**
+
+| Rule | Required | Best measured |
+| --- | --- | --- |
+| Clean recording | ≤ 10% missed | 91.7% |
+| First 3 seconds | ≤ 20% missed | 96.2% |
+| 10 dB noise | ≤ 30% missed | 100% |
+
+All three fail, and they fail by a wide margin. This is the **easy** case: studio audio, same session, no clones.
 
 ## Limits of this test (they cut both ways)
 
@@ -103,4 +141,14 @@ node cli.mjs --model ../../.local/voice-stamp/models/<model>.onnx --wavs ../../.
 
 ## Recommendation
 
-_Decided by the rule above once the final run is in._
+**Stop.** Do not build Voice Stamp (#61) now. With open on-device models it would either hold most honest uploads, or miss almost every real reuse of a voice. Either outcome would hurt artists and erode trust in moderation. #61 is closed without code, linking here.
+
+What would change the answer:
+- **Better data.** Run this tool on the recordings listed above: many speakers, several sessions and devices, family members and AI clones. If a model then passes the rule, revisit.
+- **A narrower product.** Instead of comparing every upload with every stamp, compare an upload only with **one named artist**: for example, when someone reports "this uses my voice", or when an upload claims to be by a stamped artist. That is a 1-to-1 check, where a 4–10% EER is far more usable. It would still only be a hint for a human moderator. This is a new idea for the owner to decide on, not part of Level 4.
+- **Keep watching voice-clone detection** and audio watermarking: marking Mazwi's own AI voices so they can be recognised later. These attack the clone problem more directly than speaker recognition.
+
+Meanwhile, Mazwi's existing protections apply:
+- uploaders confirm that they own the recording or have permission;
+- AI voices are standard voices, never clones of the artist;
+- viewers can report "Shared without permission" for moderators.
