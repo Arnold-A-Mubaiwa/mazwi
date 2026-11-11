@@ -199,12 +199,5 @@ public sealed class OpenAiSpeechGenerator(string? apiKey, string model = "gpt-re
         }
     }
 
-    private static string LanguageName(string language) => language switch
-    {
-        "sn" => "Shona",
-        "xh" => "isiXhosa",
-        "sw" => "Swahili",
-        "en" => "English",
-        _ => throw new ArgumentException("Unsupported language.")
-    };
+    private static string LanguageName(string language) => StoryLanguages.Find(language)?.EnglishName ?? throw new ArgumentException("Unsupported language.");
 }

@@ -1,6 +1,6 @@
 "use client";
 import { useSyncExternalStore } from "react";
-import { LANGUAGES, LANGUAGE_KEY, resolveLanguage, type LanguageCode } from "@/lib/languages";
+import { LANGUAGES, LANGUAGE_KEY, languageLabel, resolveLanguage, type LanguageCode } from "@/lib/languages";
 const changeEvent = "mazwi-language-change";
 let sessionLanguage: LanguageCode = "sn";
 function subscribe(listener: () => void) {
@@ -29,7 +29,7 @@ export function LanguagePicker() {
   return <div className="language-control">
     <div className="language-label"><span aria-hidden="true">◎</span><label htmlFor="language">Your language</label></div>
     <div className="select-wrap"><select id="language" value={code} onChange={(event) => setLanguage(event.target.value)}>
-      {LANGUAGES.map((language) => <option key={language.code} value={language.code}>{language.name}</option>)}
+      {LANGUAGES.map((language) => <option key={language.code} value={language.code}>{languageLabel(language)}</option>)}
     </select><span aria-hidden="true">⌄</span></div>
     <p className="language-note" aria-live="polite">{selected.greeting}. Make yourself at home.</p>
   </div>;

@@ -12,7 +12,7 @@ It uses the .NET API and PostgreSQL without sending anything to OpenAI.
 5. Choose another supported language, type or paste your own permitted translation, and choose **Save translation draft**.
 6. Reopen the story through Studio, or bookmark its editing URL. Saved text and translations load from PostgreSQL.
 
-Supported languages are Shona, isiXhosa, Kiswahili and English. The original language cannot be a translation target.
+Mazwi supports 25 languages (see [languages.md](languages.md)). The original language cannot be a translation target.
 Each text must contain 1–20,000 characters after trimming its outer whitespace. Internal line breaks, tabs, names and punctuation are preserved; other control characters are rejected.
 An original transcript must be saved before translations. Save changes to the original before editing translations.
 Changing the original preserves existing translation drafts; the artist must check them again for meaning.

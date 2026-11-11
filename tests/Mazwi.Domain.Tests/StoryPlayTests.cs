@@ -38,7 +38,7 @@ public sealed class StoryPlayTests
         // Act / Assert
         Assert.Null(draft.RecordPlay("sn", draft.ReviewVersion, Day));
         Assert.Null(story.RecordPlay("sn", Guid.NewGuid(), Day));
-        Assert.Null(story.RecordPlay("fr", story.ReviewVersion, Day));
+        Assert.Null(story.RecordPlay("de", story.ReviewVersion, Day));
         Assert.Null(story.RecordPlay(null!, story.ReviewVersion, Day));
     }
 
@@ -47,7 +47,7 @@ public sealed class StoryPlayTests
     {
         // Act / Assert
         Assert.Throws<DomainException>(() => new StoryPlay(Guid.Empty, "sn", Day));
-        Assert.Throws<DomainException>(() => new StoryPlay(Guid.NewGuid(), "fr", Day));
+        Assert.Throws<DomainException>(() => new StoryPlay(Guid.NewGuid(), "de", Day));
         Assert.Throws<DomainException>(() => new StoryPlay(Guid.NewGuid(), "sn", default));
     }
 

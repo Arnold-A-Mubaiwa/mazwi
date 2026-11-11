@@ -16,7 +16,7 @@ public sealed record TranslationDraft
         Language = language?.Trim() ?? string.Empty;
         if (!StoryDetails.SupportsLanguage(Language))
         {
-            throw new DomainException("Choose Shona, isiXhosa, Swahili, or English for the translation.");
+            throw new DomainException("Choose one of the languages Mazwi supports for the translation.");
         }
 
         Text = new StoryText(text);
