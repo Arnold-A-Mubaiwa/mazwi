@@ -9,7 +9,7 @@ public sealed class StoryVoiceServiceTests
     private readonly IStoryRepository _repository = Substitute.For<IStoryRepository>();
     private readonly IStoryMediaStore _mediaStore = Substitute.For<IStoryMediaStore>();
     private readonly ISpeechGenerator _generator = Substitute.For<ISpeechGenerator>();
-    private readonly Story _story = Story.Upload(new StoryDetails("Folktale", "Artist", "Shona", "ZW", "folktale", "sn"), new StoryRecording("clip.wav", 12), true);
+    private readonly Story _story = Story.Upload(new StoryDetails("Folktale", "Artist", "Shona", "ZW", "folktale", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
 
     private StoryVoiceService Service(string? translation = "Molo. Unjani?")
     {

@@ -23,6 +23,7 @@ public sealed class StoriesEndpointTests : IDisposable
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
+            builder.SignInTestArtist();
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IStoryRepository>();
@@ -128,7 +129,7 @@ public sealed class StoriesEndpointTests : IDisposable
     public async Task Get_ExistingStory_ReturnsMetadata()
     {
         // Arrange
-        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         _repository.GetAsync(story.Id, Arg.Any<CancellationToken>()).Returns(story);
         // Act
         StoryResponse? response = await _client.GetFromJsonAsync<StoryResponse>($"/api/stories/{story.Id}");

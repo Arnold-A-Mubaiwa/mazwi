@@ -8,7 +8,7 @@ public sealed class StoryServiceTests
 {
     private readonly IStoryRepository _repository = Substitute.For<IStoryRepository>();
     private readonly IStoryMediaStore _media = Substitute.For<IStoryMediaStore>();
-    private static UploadStoryCommand Command(bool permission = true) => new("Story", "Artist", "Shona", "ZW", "folktale", "sn", permission, "clip.wav", 12);
+    private static UploadStoryCommand Command(bool permission = true) => new("Story", "Artist", "Shona", "ZW", "folktale", "sn", permission, "clip.wav", 12, TestOwner.Id);
 
     [Fact]
     public async Task UploadAsync_ValidStory_SavesMediaBeforeMetadataAndPassesCancellation()
@@ -24,7 +24,7 @@ public sealed class StoryServiceTests
         Received.InOrder(() =>
         {
             _media.SaveAsync(story.Id, Arg.Any<StoryRecording>(), stream, cancellation.Token);
-            _repository.AddAsync(Arg.Is<Story>(s => s.Id == story.Id), cancellation.Token);
+            _repository.AddAsync(Arg.Is<Story>(s => s.Id == story.Id && s.OwnerId == TestOwner.Id), cancellation.Token);
         });
         await _media.DidNotReceiveWithAnyArgs().DeleteAsync(default, default!, default);
     }
@@ -86,7 +86,7 @@ public sealed class StoryServiceTests
     public async Task GetAsync_ExistingStory_ReturnsMetadataWithoutStoragePath()
     {
         // Arrange
-        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         _repository.GetAsync(story.Id, Arg.Any<CancellationToken>()).Returns(story);
         var service = new StoryService(_repository, _media);
         // Act / Assert

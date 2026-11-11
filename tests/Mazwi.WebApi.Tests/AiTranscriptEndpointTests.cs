@@ -16,7 +16,7 @@ public sealed class AiTranscriptEndpointTests : IDisposable
     private readonly IStoryRepository _repository = Substitute.For<IStoryRepository>();
     private readonly IStoryMediaStore _mediaStore = Substitute.For<IStoryMediaStore>();
     private readonly ITranscriber _transcriber = Substitute.For<ITranscriber>();
-    private readonly Story _story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+    private readonly Story _story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
     private readonly WebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
@@ -28,6 +28,7 @@ public sealed class AiTranscriptEndpointTests : IDisposable
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
+            builder.SignInTestArtist(access: null);
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IStoryRepository>(); services.AddSingleton(_repository);

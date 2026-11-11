@@ -7,7 +7,7 @@ namespace Mazwi.Application.Tests;
 public sealed class StoryDraftServiceTests
 {
     private readonly IStoryRepository _repository = Substitute.For<IStoryRepository>();
-    private readonly Story _story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+    private readonly Story _story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
 
     private StoryDraftService Service()
     {

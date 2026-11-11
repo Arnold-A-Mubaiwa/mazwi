@@ -4,7 +4,7 @@ public sealed class AiTranscriptTests
 {
     private static Story ApprovedStory()
     {
-        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         story.SetTranscript("Human transcript");
         story.SetTranslation("xh", "Molo");
         story.Approve("sn", story.ReviewVersion);
@@ -31,7 +31,7 @@ public sealed class AiTranscriptTests
     public void SetAiTranscript_NoTranscriptYet_SavesFirstDraft()
     {
         // Arrange
-        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true);
+        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
         // Act
         story.SetAiTranscript(new StoryText("First draft"), story.ReviewVersion);
         // Assert

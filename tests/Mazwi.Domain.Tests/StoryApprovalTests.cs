@@ -4,7 +4,7 @@ public sealed class StoryApprovalTests
 {
     private static Story StoryWithText()
     {
-        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 19), true);
+        Story story = Story.Upload(new StoryDetails("Story", "Artist", "Shona", "ZW", "story", "sn"), new StoryRecording("clip.wav", 19), true, TestOwner.Id);
         story.SetTranscript("Original"); story.SetTranslation("xh", "Xhosa draft"); story.SetTranslation("en", "English draft");
         return story;
     }
@@ -86,7 +86,7 @@ public sealed class StoryApprovalTests
         Assert.Throws<DomainException>(() => story.Approve("xh", story.ReviewVersion));
         story.Approve("sn", story.ReviewVersion);
         Assert.Throws<DomainException>(() => story.Approve("sw", story.ReviewVersion));
-        Story empty = Story.Upload(story.Details, story.Recording, true);
+        Story empty = Story.Upload(story.Details, story.Recording, true, TestOwner.Id);
         Assert.Throws<DomainException>(() => empty.Approve("sn", empty.ReviewVersion));
         Assert.Throws<DomainException>(() => new TranslatedRecording(Guid.Empty, story.Recording));
         Assert.Throws<ArgumentNullException>(() => new TranslatedRecording(Guid.NewGuid(), null!));

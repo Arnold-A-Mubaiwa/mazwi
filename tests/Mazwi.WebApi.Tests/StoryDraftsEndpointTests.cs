@@ -14,7 +14,7 @@ namespace Mazwi.WebApi.Tests;
 public sealed class StoryDraftsEndpointTests : IDisposable
 {
     private readonly IStoryRepository _repository = Substitute.For<IStoryRepository>();
-    private readonly Story _story = Story.Upload(new StoryDetails("Tsuro", "Rudo", "Shona", "ZW", "folktale", "sn"), new StoryRecording("clip.wav", 12), true);
+    private readonly Story _story = Story.Upload(new StoryDetails("Tsuro", "Rudo", "Shona", "ZW", "folktale", "sn"), new StoryRecording("clip.wav", 12), true, TestOwner.Id);
     private readonly WebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
@@ -24,6 +24,7 @@ public sealed class StoryDraftsEndpointTests : IDisposable
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
+            builder.SignInTestArtist(access: null);
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IStoryRepository>();

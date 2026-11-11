@@ -31,6 +31,8 @@ function isTranslation(value: unknown): value is TranslationDraft {
 
 export async function readDraft(response: Response, id: string): Promise<StoryDraft> {
   if (!response.ok) {
+    if (response.status === 401) throw new Error("You have been signed out. Sign in again; your typed text is still here.");
+    if (response.status === 403) throw new Error("This story belongs to another artist. Only its owner can edit or approve it.");
     if (response.status === 404) throw new Error("This story could not be found. Check the editing link or upload a story first.");
     if (response.status === 409) throw new Error("This story changed. Reload the page and review the saved content before approving or uploading again. Your typed text is still here.");
     if (response.status === 413) throw new Error("The recording must be 25 MB or smaller.");

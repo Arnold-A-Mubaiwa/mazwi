@@ -1,3 +1,4 @@
+using Mazwi.Domain;
 using Npgsql;
 
 namespace Mazwi.Repository.Tests;
@@ -21,6 +22,9 @@ public sealed class PostgresFixture : IAsyncLifetime
         await using NpgsqlConnection connection = await DataSource.OpenConnectionAsync();
         Migrator = new DatabaseMigrator(connectionString);
         Migrator.Migrate(CancellationToken.None);
+        // One stable fixture artist owns test stories, so repeated runs do not add accounts to the shared database.
+        await new ArtistRepository(DataSource).AddAsync(Artist.Rehydrate(TestOwner.Id, new EmailAddress("repository-tests@mazwi.test"),
+            new PasswordHash(Convert.ToBase64String(new byte[13])), DateTimeOffset.UtcNow), CancellationToken.None);
     }
 
     public async Task DisposeAsync()

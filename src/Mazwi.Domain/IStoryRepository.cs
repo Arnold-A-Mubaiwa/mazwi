@@ -11,4 +11,7 @@ public interface IStoryRepository
     Task SaveApprovalAsync(Guid storyId, string language, Guid expectedVersion, bool speakerChecked, CancellationToken cancellationToken);
     Task SaveRecordingAsync(Guid storyId, TranslationDraft draft, Guid expectedVersion, CancellationToken cancellationToken);
     Task<IReadOnlyList<Guid>> ListIdsAsync(bool approvedOnly, int offset, int limit, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Guid>> ListOwnedIdsAsync(Guid ownerId, int offset, int limit, CancellationToken cancellationToken);
+    // Gives every story saved before accounts existed to one artist. Returns how many were claimed.
+    Task<int> ClaimUnownedAsync(Guid ownerId, CancellationToken cancellationToken);
 }
