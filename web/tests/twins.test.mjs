@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { decideTwin, getTwins, setTwinsAllowed, twinLine } from "../lib/twins.ts";
+import { decideTwin, getTwins, getVersionRequests, getViewerTwins, requestVersion, requestsSummary, setTwinsAllowed, twinLine } from "../lib/twins.ts";
 
 const twin = { storyId: "a", storyTitle: "Tsuro na Gudo", twinStoryId: "b", twinTitle: "Ìjàpá", twinArtistName: "ABS", twinLanguage: "yo", twinCommunity: "Yoruba, Nigeria", status: "suggested" };
 
@@ -42,4 +42,38 @@ test("setTwinsAllowed_Choice_SendsItAndReadsDraft", async (t) => {
 test("twinLine_Twin_NamesLanguageArtistAndCommunity", () => {
   assert.equal(twinLine(twin), "Told in Yoruba by ABS (Yoruba, Nigeria)");
   assert.equal(twinLine({ ...twin, twinLanguage: "xx" }), "Told in xx by ABS (Yoruba, Nigeria)");
+});
+
+const viewerTwin = { storyId: "b", title: "Ijapa", artistName: "ABS", community: "Yoruba", language: "yo", availableInYourLanguage: false };
+
+test("getViewerTwins_ValidOrFailing_NeverThrows", async (t) => {
+  t.mock.method(globalThis, "fetch", async (url) => { assert.equal(url, "/api/feed/a/twins?language=sn"); return Response.json([viewerTwin]); });
+  assert.deepEqual(await getViewerTwins("a", "sn"), [viewerTwin]);
+  t.mock.method(globalThis, "fetch", async () => new Response("", { status: 404 }));
+  assert.deepEqual(await getViewerTwins("a", "sn"), []);
+  t.mock.method(globalThis, "fetch", async () => Response.json([{ ...viewerTwin, availableInYourLanguage: "yes" }]));
+  assert.deepEqual(await getViewerTwins("a", "sn"), []);
+});
+
+test("requestVersion_Responses_MapToMessages", async (t) => {
+  t.mock.method(globalThis, "fetch", async (url, init) => { assert.equal(url, "/api/feed/b/version-requests"); assert.equal(init.body, JSON.stringify({ language: "sn" })); return new Response(null, { status: 202 }); });
+  await requestVersion("b", "sn");
+  for (const [status, message] of [[400, /already available/], [404, /no longer in the feed/], [429, /Too many/], [500, /could not be sent/]]) {
+    t.mock.method(globalThis, "fetch", async () => new Response(null, { status }));
+    await assert.rejects(requestVersion("b", "sn"), message);
+  }
+});
+
+test("getVersionRequests_ValidOrBad_ReturnsOrThrows", async (t) => {
+  t.mock.method(globalThis, "fetch", async () => Response.json([{ storyId: "b", language: "sn", count: 3 }]));
+  assert.deepEqual(await getVersionRequests(), [{ storyId: "b", language: "sn", count: 3 }]);
+  t.mock.method(globalThis, "fetch", async () => Response.json([{ storyId: "b", language: "sn", count: 0 }]));
+  await assert.rejects(getVersionRequests(), /unexpected/);
+  t.mock.method(globalThis, "fetch", async () => new Response("", { status: 401 }));
+  await assert.rejects(getVersionRequests(), /could not be loaded/);
+});
+
+test("requestsSummary_Totals_ReadNaturally", () => {
+  assert.equal(requestsSummary([]), "");
+  assert.equal(requestsSummary([{ storyId: "b", language: "sn", count: 3 }, { storyId: "b", language: "zu", count: 1 }]), "Listeners asked for a Shona version (3) · an isiZulu version (1)");
 });

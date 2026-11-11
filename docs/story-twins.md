@@ -14,6 +14,14 @@ A Shona artist tells *Tsuro na Gudo*; a Yoruba artist tells the same tale with Ã
    - **Unlink** a linked twin at any time; that is also final.
 6. Nothing is shown to viewers until an artist confirms.
 
+## For viewers (#59)
+
+- Under a story, **Same story, another voice** lists its confirmed twins, for example "Also told in Yoruba by ABS (Yoruba, Nigeria)".
+- If the twin's artist approved a version in the viewer's language, the button says **Hear it in Shona** and the twin plays in Shona.
+- Otherwise the card says so honestly, offers **Hear it in Yoruba** (with its approved words), and **Ask for a Shona version**.
+- Requests are anonymous counts per story and language: nothing about the listener is stored, and they are rate-limited per address (`Mazwi:VersionRequestsPerMinute`, default 10).
+- The twin's artist sees "Listeners asked for a Shona version (3)" on the story's Studio card until they approve a Shona version.
+
 ## Artist control
 
 - Stories take part by default. In the story editor, **Let Mazwi suggest twins for this story** turns it off. Off also hides existing twins (for both artists); turning it back on brings them back.

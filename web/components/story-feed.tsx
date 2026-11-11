@@ -10,6 +10,8 @@ import { canDub, dubbedLabel } from "@/lib/dubbing";
 import { recordPlay } from "@/lib/plays";
 import { ShareButton } from "./share-button";
 import { ReportStory } from "./moderation";
+import { StoryTwinsCard } from "./story-twins-card";
+import { FEATURES } from "@/lib/config";
 
 function StoryCard({ story, preferred }: { story: ViewerStory; preferred: ReturnType<typeof usePreferredLanguage> }) {
   const [original, setOriginal] = useState(false);
@@ -88,6 +90,7 @@ export function StoryFeed({ storyId }: { storyId?: string }) {
       onTouchEnd={event => { const start = touch.current; touch.current = null; if (!start) return; const y = start.y - event.changedTouches[0].clientY; const x = start.x - event.changedTouches[0].clientX; if (Math.abs(y) < 80 || Math.abs(y) < Math.abs(x) * 1.5) return; if (y > 0) void next(); else setIndex(value => Math.max(0, value - 1)); }}>
       <StoryCard key={`${story.id}-${story.reviewVersion}-${language}`} story={story} preferred={language} />
     </article>
+    {storyId && FEATURES.storyTwins && <StoryTwinsCard key={`twins-${story.id}-${language}`} storyId={story.id} language={language} />}
     {!storyId && <nav className="viewer-navigation" aria-label="Story navigation"><button onClick={() => setIndex(value => Math.max(0, value - 1))} disabled={index === 0}>Previous story</button><span>{index + 1} / {page.items.length}{page.nextOffset !== null ? "+" : ""}</span><button onClick={() => void next()} disabled={moreBusy || (index === page.items.length - 1 && page.nextOffset === null)}>Next story</button></nav>}
     <button className="text-control" onClick={() => setRetry(value => value + 1)}>Refresh stories</button>
   </div>;

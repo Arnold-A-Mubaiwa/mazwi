@@ -14,4 +14,6 @@ public interface IStoryTwinRepository
     Task<StoryTwin?> GetVisibleAsync(Guid story, Guid other, CancellationToken cancellationToken);
     Task SaveStatusAsync(StoryTwin twin, CancellationToken cancellationToken);
     Task<IReadOnlyList<TwinView>> ListForOwnerAsync(Guid ownerId, CancellationToken cancellationToken);
+    /// <summary>Confirmed twins of a story that are still twinnable, for viewers.</summary>
+    Task<IReadOnlyList<Guid>> ListConfirmedTwinIdsAsync(Guid storyId, CancellationToken cancellationToken);
 }
