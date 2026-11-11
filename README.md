@@ -18,7 +18,7 @@ From this repository's root in PowerShell, run `./scripts/Start-Mazwi.ps1`, then
 ## Local development
 
 Install the SDK pinned in global.json. PostgreSQL 18 is the current local target.
-Normally use separate development and test databases; the test database name must end in `_tests`. The owner has temporarily approved using that test database for the local demo too. Both private environment settings point to it; application uploads will coexist with test records until development storage is separated.
+Use separate development and test databases (see [docs/databases.md](docs/databases.md)). The app database must not end in `_tests`; the API refuses to start against one outside the Testing environment. Tests only use the `_tests` database.
 The tests migrate that test database and insert uniquely identified records; they never truncate it.
 
 Keep credentials in an ignored `.env`, ignored `src/Mazwi.WebApi/appsettings.Development.json`, process environment, or ASP.NET user-secrets (ID: `mazwi-webapi-development`).

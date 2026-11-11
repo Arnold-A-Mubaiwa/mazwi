@@ -9,6 +9,8 @@ public sealed class DatabaseMigrator(string connectionString)
     public void Migrate(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        // Creates the database on first run, so a fresh development database needs no manual step.
+        EnsureDatabase.For.PostgresqlDatabase(connectionString);
         var result = DeployChanges.To.PostgresqlDatabase(connectionString)
             .WithScriptsEmbeddedInAssembly(typeof(DatabaseMigrator).Assembly)
             .JournalToPostgresqlTable("public", "schema_versions")
