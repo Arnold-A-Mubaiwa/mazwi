@@ -20,7 +20,7 @@ public sealed class StoryTwinRepository(NpgsqlDataSource dataSource) : IStoryTwi
             WHERE f.story_id IS NULL
                 OR f.source_hash <> encode(sha256(convert_to(t.transcript, 'UTF8')), 'hex')
                 OR (f.gist IS NULL AND f.failed_at < @RetryFailedBefore)
-            ORDER BY f.updated_at NULLS FIRST, t.id
+            ORDER BY COALESCE(f.gist IS NULL AND f.failed_at IS NOT NULL, false), t.permission_recorded_at DESC, t.id
             LIMIT @Limit
             """, new { RetryFailedBefore = retryFailedBefore, Limit = limit }, cancellationToken: cancellationToken));
         return rows.Select(row => new StoryToFingerprint(row.StoryId, row.Language, row.StoryType, row.Text)).ToArray();
@@ -122,6 +122,21 @@ public sealed class StoryTwinRepository(NpgsqlDataSource dataSource) : IStoryTwi
             """, new { OwnerId = ownerId }, cancellationToken: cancellationToken));
         return rows.Select(row => new TwinView(row.StoryId, row.StoryTitle, row.TwinStoryId, row.TwinTitle, row.TwinArtistName,
             row.TwinLanguage, row.TwinCommunity, Enum.Parse<TwinStatus>(row.Status))).ToArray();
+    }
+
+    public async Task<IReadOnlyList<Guid>> ListConfirmedTwinIdsAsync(Guid storyId, CancellationToken cancellationToken)
+    {
+        await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        IEnumerable<Guid> ids = await connection.QueryAsync<Guid>(new CommandDefinition("""
+            SELECT twin.id
+            FROM story_twins p
+            JOIN twinnable_stories mine ON mine.id = @StoryId AND mine.id IN (p.story_a, p.story_b)
+            JOIN twinnable_stories twin ON twin.id IN (p.story_a, p.story_b) AND twin.id <> mine.id
+            WHERE p.status = 'Confirmed'
+            ORDER BY p.similarity DESC, twin.id
+            LIMIT 20
+            """, new { StoryId = storyId }, cancellationToken: cancellationToken));
+        return ids.ToArray();
     }
 
     private sealed class WorkRow

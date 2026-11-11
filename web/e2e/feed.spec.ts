@@ -83,5 +83,6 @@ test("Feed_FailedRequest_ShowsRetryAndRecovers", async ({ page }) => {
   await expect(page.getByRole("main").getByRole("alert")).toContainText("Please try again");
   await page.unroute("**/api/feed?*");
   await page.getByRole("button", { name: "Try stories again", exact: true }).click();
-  await expect(page.getByRole("heading", { name: /first voices/ })).toBeVisible();
+  // Other specs may have stories published at this moment (the shared test database), so either state is fine.
+  await expect(page.getByRole("heading", { name: /first voices/ }).or(page.getByRole("article", { name: "Story player" }))).toBeVisible();
 });
