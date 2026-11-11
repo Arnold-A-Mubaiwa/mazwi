@@ -1,0 +1,22 @@
+# Example: Caddy in front of Mazwi on one Linux or Windows server. See docs/hosting.md.
+# Caddy gets and renews the HTTPS certificate, redirects http to https, and replaces any
+# X-Forwarded-For sent by the visitor with their real address.
+mazwi.example {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		-Server
+	}
+
+	# Recordings are up to 25 MB; leave some room for the multipart form.
+	request_body {
+		max_size 27MB
+	}
+
+	# Next.js serves the site and forwards /api to the API, both on this machine only.
+	reverse_proxy 127.0.0.1:3000
+}
