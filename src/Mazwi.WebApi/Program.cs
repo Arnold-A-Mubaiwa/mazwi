@@ -134,6 +134,7 @@ builder.Services.AddScoped<IStoryTwinService, StoryTwinService>();
 builder.Services.AddHostedService<StoryTwinSweeper>();
 builder.Services.AddScoped<IStoryVersionRequestRepository, StoryVersionRequestRepository>();
 builder.Services.AddScoped<IStoryVersionRequestService, StoryVersionRequestService>();
+builder.Services.AddScoped<IDemoSeedService, DemoSeedService>();
 builder.Services.AddScoped<IStoryReviewService, StoryReviewService>();
 builder.Services.AddSingleton<ILanguageService, LanguageService>();
 builder.Services.AddScoped<IStoryFeedService, StoryFeedService>();
@@ -178,6 +179,7 @@ app.MapControllers();
 
 int claimIndex = Array.IndexOf(args, "--claim-stories");
 int importIndex = Array.IndexOf(args, "--import-stories");
+int demoIndex = Array.IndexOf(args, "--seed-demo");
 if (args.Contains("--migrate", StringComparer.Ordinal))
 {
     string connectionString = app.Configuration.GetConnectionString("Mazwi")
@@ -205,6 +207,23 @@ else if (claimIndex >= 0)
             Console.Error.WriteLine(failure.Message);
             Environment.ExitCode = 1;
         }
+    }
+}
+else if (demoIndex >= 0)
+{
+    // Judge demo: seeds demo/demo.json into a *_demo database (see scripts/Start-Mazwi.ps1 -Demo).
+    if (demoIndex + 1 >= args.Length || !DemoMode.Allows(app.Configuration.GetConnectionString("Mazwi"), hosting.Hosted))
+    {
+        Console.Error.WriteLine("Usage: --seed-demo <demo folder>, against a database whose name ends in _demo, never when hosted.");
+        Environment.ExitCode = 1;
+    }
+    else
+    {
+        string folder = Path.GetFullPath(args[demoIndex + 1]);
+        await using AsyncServiceScope scope = app.Services.CreateAsyncScope();
+        DemoSeedResult result = await scope.ServiceProvider.GetRequiredService<IDemoSeedService>()
+            .SeedAsync(DemoMode.Load(folder), story => DemoMode.Open(folder, story), CancellationToken.None);
+        Console.WriteLine(result.AlreadySeeded ? "Demo content is already there." : $"Seeded {result.Artists} demo artists and {result.Stories} stories.");
     }
 }
 else if (importIndex >= 0)

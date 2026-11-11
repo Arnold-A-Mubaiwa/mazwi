@@ -1,4 +1,5 @@
-param([switch]$SkipBuild)
+# -Demo: no setup needed. Runs a private portable PostgreSQL and seeds the demo stories (see README, "For judges").
+param([switch]$SkipBuild, [switch]$Demo)
 
 $ErrorActionPreference = 'Stop'
 $workspaceRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -43,6 +44,16 @@ if ($listeners.Count) {
 }
 
 . (Join-Path $PSScriptRoot 'Set-LocalEnvironment.ps1')
+if ($Demo) {
+    # The demo never touches the databases, recordings or emails configured in .env.
+    . (Join-Path $PSScriptRoot 'Demo-Postgres.ps1')
+    $env:ConnectionStrings__Mazwi = Start-MazwiDemoDatabase $workspaceRoot
+    $env:MediaStorage__Root = Join-Path $workspaceRoot '.local/demo-media'
+    $env:Mazwi__OutboxPath = Join-Path $workspaceRoot '.local/demo-outbox'
+    $env:Mazwi__Moderators = 'demo-artist@mazwi.test'
+    $env:Mazwi__Hosted = 'false'
+    $env:Mazwi__Twins__Enabled = 'false'
+}
 if ([string]::IsNullOrWhiteSpace($env:ConnectionStrings__Mazwi)) {
     throw 'Configure ConnectionStrings__Mazwi privately in the ignored root .env. No OpenAI key is needed for this manual demo.'
 }
@@ -67,6 +78,7 @@ if (-not (Test-Path -LiteralPath $apiDll) -or -not (Test-Path -LiteralPath (Join
     throw 'A production build is missing. Run this command without -SkipBuild.'
 }
 Invoke-MazwiStep $dotnetExecutable @(('"' + $apiDll + '"'), '--migrate') $apiRoot 'migrate'
+if ($Demo) { Invoke-MazwiStep $dotnetExecutable @(('"' + $apiDll + '"'), '--seed-demo', ('"' + (Join-Path $workspaceRoot 'demo') + '"')) $apiRoot 'seed-demo' }
 
 $started = @()
 try {
@@ -89,6 +101,7 @@ try {
     @{ workspace = $workspaceRoot; processes = $processEntries } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $statePath -Encoding UTF8
     Write-Output 'Mazwi is ready: http://127.0.0.1:3000'
     Write-Output 'Studio: http://127.0.0.1:3000/studio'
+    if ($Demo) { Write-Output 'Demo sign-in: demo-artist@mazwi.test (also a moderator) or demo-artist-2@mazwi.test, password mazwi-demo-2026' }
     Write-Output 'Stop with: .\scripts\Stop-Mazwi.ps1'
 } catch {
     foreach ($localProcess in $started) { if (-not $localProcess.HasExited) { Stop-Process -Id $localProcess.Id -ErrorAction SilentlyContinue } }

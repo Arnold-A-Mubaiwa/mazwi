@@ -12,7 +12,29 @@ Mazwi is the tool we are building so that all Africans can listen to each other'
 - **Story Twins.** The same tale often lives in many versions, because language kept people apart or because it changed as it travelled. Tsuro the hare in Shona is Ìjàpá the tortoise in Yoruba. Mazwi finds these twins, and the artists confirm them. A listener can then go from one telling to the other ("Also told in Yoruba by …"), and ask for it in their own language. See [Story Twins](docs/story-twins.md).
 - **Artists stay in control.** Nothing is shown until its artist approves it. AI only drafts; people decide.
 
-## What you need
+## For judges: try it with no setup
+
+You need Windows, the [.NET SDK 10.0.402](https://dotnet.microsoft.com/download) and [Node.js 24](https://nodejs.org/). You do **not** need a database or any keys.
+
+```powershell
+git clone https://github.com/Arnold-A-Mubaiwa/mazwi.git
+cd mazwi
+npm.cmd install --prefix web --ignore-scripts --no-audit --no-fund
+./scripts/Start-Mazwi.ps1 -Demo
+```
+
+The first run downloads a small portable PostgreSQL (about 25 MB, checked against a fixed SHA-256) into the ignored `.local` folder and starts it privately on this computer. It then loads three short demo stories: real isiXhosa, Sesotho and Setswana speech from [OpenSLR 32](demo/ATTRIBUTION.md). If it asks for the Microsoft Visual C++ Redistributable, install it from the link it shows and run it again.
+
+Open **http://127.0.0.1:3000** and sign in with either demo account:
+
+| Email | Password | |
+| --- | --- | --- |
+| `demo-artist@mazwi.test` | `mazwi-demo-2026` | also a moderator (`/moderation`) |
+| `demo-artist-2@mazwi.test` | `mazwi-demo-2026` | |
+
+These passwords only work in the local demo database. Try choosing your language, uploading a story, writing a translation and approving it. Stop everything with `./scripts/Stop-Mazwi.ps1`. AI drafts and Story Twin suggestions need an OpenAI key (see below); everything else works without one.
+
+## Set up for development: what you need
 
 - Windows with PowerShell. The helper scripts are PowerShell.
 - [.NET SDK 10.0.402](https://dotnet.microsoft.com/download).
