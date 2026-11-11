@@ -55,7 +55,7 @@ Artist/community/country credit is visible. Next/previous, focused arrow keys an
 | Manual transcript and translation editing | AI translation and generated voices (API credit required) |
 | Artist-provided translated recordings | ffmpeg export of dubbed files (subtitles: docs/subtitles.md; browser dubbing: docs/dubbing.md) |
 | Explicit approval, stale-review protection and revocation | Hosted access control (artist accounts: docs/accounts.md) |
-| Approved feed/story playback, saved language preference, credits | Story Twins, voice stamps/cloning, PWA sharing and Android bubble (play statistics: docs/play-stats.md) |
+| Approved feed/story playback, saved language preference, credits | Story Twins, voice stamps/cloning and Android bubble (play statistics: docs/play-stats.md; PWA and sharing: docs/pwa-sharing.md) |
 
 This is a localhost demo. Both application and tests temporarily use the owner's approved shared test database; unpublished synthetic fixture metadata may appear in Studio. Separate databases before hosting.
 Browser test files stay separate from real artist files. Tests delete or revoke synthetic approvals, so they do not publish fabricated demo content.

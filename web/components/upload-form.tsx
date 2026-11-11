@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FEATURES } from "@/lib/config";
 import { LANGUAGES } from "@/lib/languages";
 import { recordingError, uploadStory, type UploadedStory } from "@/lib/stories";
+import { takeSharedRecording } from "@/lib/share";
 
 export function UploadForm() {
   const [busy, setBusy] = useState(false);
@@ -12,6 +13,21 @@ export function UploadForm() {
   const [story, setStory] = useState<UploadedStory | null>(null);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
+  const recordingInput = useRef<HTMLInputElement | null>(null);
+  const [shared, setShared] = useState<string | null>(null);
+  // A recording shared from another app (via the installed app's share sheet) fills in the file field.
+  useEffect(() => {
+    if (typeof caches === "undefined") return;
+    takeSharedRecording(caches).then(file => {
+      if (!file || !recordingInput.current) return;
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      recordingInput.current.files = transfer.files;
+      setShared(file.name);
+      const invalid = recordingError(file);
+      if (invalid) setError(invalid);
+    }).catch(() => {});
+  }, []);
 
   async function submit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,8 +60,9 @@ export function UploadForm() {
     <fieldset disabled={busy}>
       <legend className="sr-only">Story details and recording</legend>
       <label className="recording-field"><span id="recording-label">Your recording</span>
-        <input type="file" name="recording" accept=".mp3,.wav,.m4a,.mp4,.webm" required aria-labelledby="recording-label" aria-describedby="recording-help" />
+        <input ref={recordingInput} type="file" name="recording" accept=".mp3,.wav,.m4a,.mp4,.webm" required aria-labelledby="recording-label" aria-describedby="recording-help" onChange={() => setShared(null)} />
         <span id="recording-help">Audio or video · MP3, WAV, M4A, MP4 or WebM · Up to 25 MB</span>
+        {shared && <span className="shared-recording" role="status">Shared recording ready: {shared}</span>}
       </label>
       <label>Story title<input name="title" maxLength={200} required autoComplete="off" placeholder="What is your story called?" /></label>
       <div className="upload-grid">
