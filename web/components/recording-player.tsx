@@ -24,6 +24,10 @@ export function RecordingPlayer({ src, extension, label, cues, subtitlesUrl, sub
     tracker.current ??= createPlayTracker(() => played.current?.());
     tracker.current.update(milliseconds, playing);
   };
+  const finish = () => {
+    tracker.current ??= createPlayTracker(() => played.current?.());
+    tracker.current.finish();
+  };
   useEffect(() => {
     const element = player.current;
     return () => { element?.pause(); element?.removeAttribute("src"); element?.load(); };
@@ -39,8 +43,8 @@ export function RecordingPlayer({ src, extension, label, cues, subtitlesUrl, sub
   return <div className="recording-player">
     <p>{label}</p>
     {[".mp3", ".wav", ".m4a"].includes(extension)
-      ? <audio ref={attach} controls preload="metadata" src={src} aria-label={label} onError={() => setFailed(true)} onTimeUpdate={update} onSeeked={update} />
-      : <video ref={attach} controls playsInline preload="metadata" src={src} aria-label={label} onError={() => setFailed(true)} onTimeUpdate={update} onSeeked={update}>
+      ? <audio ref={attach} controls preload="metadata" src={src} aria-label={label} onError={() => setFailed(true)} onTimeUpdate={update} onSeeked={update} onEnded={finish} />
+      : <video ref={attach} controls playsInline preload="metadata" src={src} aria-label={label} onError={() => setFailed(true)} onTimeUpdate={update} onSeeked={update} onEnded={finish}>
         {subtitlesUrl && <track kind="subtitles" src={subtitlesUrl} srcLang={subtitleLanguage} label="Artist-timed subtitles" />}
       </video>}
     {cues && cues.length > 0 && <p className="subtitle-line" lang={subtitleLanguage} data-testid="subtitle-line">{cue?.text ?? " "}</p>}

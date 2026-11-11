@@ -21,6 +21,10 @@ export function DubbedPlayer({ videoSrc, voiceSrc, label, cues, subtitlesUrl, la
     tracker.current ??= createPlayTracker(() => played.current?.());
     tracker.current.update(milliseconds, playing);
   };
+  const finish = () => {
+    tracker.current ??= createPlayTracker(() => played.current?.());
+    tracker.current.finish();
+  };
 
   useEffect(() => {
     const picture = video.current;
@@ -61,7 +65,7 @@ export function DubbedPlayer({ videoSrc, voiceSrc, label, cues, subtitlesUrl, la
   return <div className="recording-player dubbed-player">
     <p>{label}</p>
     <video ref={video} controls playsInline preload="metadata" src={videoSrc} aria-label={label} onError={() => setFailed(true)}
-      onTimeUpdate={event => track(Math.round(event.currentTarget.currentTime * 1000), !event.currentTarget.paused)}>
+      onTimeUpdate={event => track(Math.round(event.currentTarget.currentTime * 1000), !event.currentTarget.paused)} onEnded={finish}>
       {subtitlesUrl && <track kind="subtitles" src={subtitlesUrl} srcLang={language} label="Artist-timed subtitles" />}
     </video>
     <audio ref={voice} preload="auto" src={voiceSrc} onError={() => setFailed(true)} data-testid="dubbed-voice"
