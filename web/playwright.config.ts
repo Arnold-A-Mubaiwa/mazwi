@@ -18,6 +18,8 @@ export default defineConfig({
       url: "http://127.0.0.1:5046/api/health", reuseExistingServer: false, timeout: 120000,
       env: {
         DOTNET_CLI_HOME: resolve("../.local/dotnet"), NUGET_PACKAGES: resolve("../.local/nuget/packages"), DOTNET_CLI_TELEMETRY_OPTOUT: "1",
+        // Testing is the only environment allowed to use the *_tests database.
+        ASPNETCORE_ENVIRONMENT: "Testing",
         ConnectionStrings__Mazwi: process.env.MAZWI_TEST_CONNECTION_STRING ?? "",
         MediaStorage__Root: resolve("../.local/browser-media"),
         Mazwi__AccountRequestsPerMinute: "1000",

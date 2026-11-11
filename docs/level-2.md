@@ -42,7 +42,7 @@ Migrations 008–010 run automatically when you start Mazwi (`./scripts/Start-Ma
 2. From the repository root in PowerShell, run once: `./scripts/Claim-Stories.ps1 -Email you@example.com`
 3. Your stories appear in Studio again.
 
-This also claims the synthetic browser-test stories from runs before accounts existed, because the test and app databases are still shared.
+Since Level 3 (#45) the app has its own database; your stories were copied into it, so claiming no longer picks up test fixtures (see databases.md).
 
 The browser tests need `MAZWI_E2E_ARTIST_PASSWORD` and `MAZWI_E2E_OTHER_ARTIST_PASSWORD` in the ignored `.env` (see `.env.example`).
 
@@ -63,7 +63,7 @@ Only the three OpenAI calls are faked, as in Level 1. Each feature also has its 
 
 - **Not ready for public hosting yet.**
   - There is no password reset or email verification.
-  - The app and tests share one database.
+  - The app and tests shared one database (separated in Level 3, #45).
   - Behind the Next.js proxy the sign-in rate limit is site-wide and the cookie is not `Secure`. Fixing both needs a trusted reverse proxy (see accounts.md).
 - **Dubbing** happens only in the browser: there is no downloadable dubbed file (no ffmpeg) and no lip-sync.
 - **Subtitles** are timed by hand, one start per line.
