@@ -29,7 +29,14 @@ public sealed class ArtistAccountService(IArtistRepository artists, IStoryReposi
         }
 
         Artist? artist = await artists.FindByEmailAsync(address, cancellationToken);
-        return artist is not null && artist.CanSignIn(password, hasher) ? ArtistDto.From(artist) : null;
+        if (artist is null)
+        {
+            // Hash anyway so an unknown email takes as long as a wrong password and does not reveal which accounts exist.
+            hasher.Hash(new NewPassword("unknown-account-timing-equaliser"));
+            return null;
+        }
+
+        return artist.CanSignIn(password, hasher) ? ArtistDto.From(artist) : null;
     }
 
     public async Task<ArtistDto?> GetAsync(Guid id, CancellationToken cancellationToken)

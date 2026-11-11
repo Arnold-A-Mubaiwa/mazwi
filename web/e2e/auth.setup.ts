@@ -2,8 +2,9 @@ import { test as setup, expect, type APIRequestContext } from "@playwright/test"
 import { ARTIST, AUTH_FILE, OTHER_ARTIST } from "./artists";
 
 export async function signInOrSignUp(request: APIRequestContext, artist: { email: string; password: string }) {
-  let response = await request.post("/api/account/signin", { data: artist });
-  if (response.status() === 401) response = await request.post("/api/account/signup", { data: artist });
+  const data = { email: artist.email, password: artist.password };
+  let response = await request.post("/api/account/signin", { data });
+  if (response.status() === 401) response = await request.post("/api/account/signup", { data });
   expect(response.ok()).toBe(true);
 }
 

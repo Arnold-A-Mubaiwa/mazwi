@@ -24,7 +24,7 @@ public sealed class PostgresFixture : IAsyncLifetime
         Migrator.Migrate(CancellationToken.None);
         // One stable fixture artist owns test stories, so repeated runs do not add accounts to the shared database.
         await new ArtistRepository(DataSource).AddAsync(Artist.Rehydrate(TestOwner.Id, new EmailAddress("repository-tests@mazwi.test"),
-            new PasswordHash("fixture-account-cannot-sign-in"), DateTimeOffset.UtcNow), CancellationToken.None);
+            new PasswordHash(Convert.ToBase64String(new byte[13])), DateTimeOffset.UtcNow), CancellationToken.None);
     }
 
     public async Task DisposeAsync()

@@ -106,4 +106,14 @@ public sealed class ArtistAccountServiceTests
         await Assert.ThrowsAsync<DomainException>(() => _service.ClaimUnownedStoriesAsync("nobody@example.com", CancellationToken.None));
         await _stories.DidNotReceiveWithAnyArgs().ClaimUnownedAsync(default, default);
     }
+
+    [Fact]
+    public async Task SignInAsync_UnknownEmail_StillHashesSoTimingDoesNotRevealAccounts()
+    {
+        // Act
+        ArtistDto? result = await _service.SignInAsync("nobody@example.com", "long password", CancellationToken.None);
+        // Assert
+        Assert.Null(result);
+        _hasher.Received(1).Hash(Arg.Any<NewPassword>());
+    }
 }

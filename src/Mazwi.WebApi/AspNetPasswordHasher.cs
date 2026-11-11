@@ -18,6 +18,14 @@ public sealed class AspNetPasswordHasher : Mazwi.Domain.IPasswordHasher
     public bool Verify(PasswordHash hash, string attempt)
     {
         ArgumentNullException.ThrowIfNull(hash);
-        return _hasher.VerifyHashedPassword(User, hash.Value, attempt) is not PasswordVerificationResult.Failed;
+        try
+        {
+            return _hasher.VerifyHashedPassword(User, hash.Value, attempt) is not PasswordVerificationResult.Failed;
+        }
+        catch (FormatException)
+        {
+            // A stored hash that is not valid base64 can never match.
+            return false;
+        }
     }
 }

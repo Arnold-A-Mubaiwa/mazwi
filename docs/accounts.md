@@ -22,9 +22,9 @@ It prints how many stories it claimed and only claims stories that have no owner
 ## How it works
 
 - Passwords are hashed with ASP.NET Core's `PasswordHasher` (salted PBKDF2) behind the Domain `IPasswordHasher`. Identity's Entity Framework stores are not used. Emails are stored lower-case.
-- Sign-in sets the `mazwi_session` cookie: HttpOnly, SameSite=Lax, Secure when served over HTTPS, 14-day sliding expiry. A session for a deleted account is rejected.
+- Sign-in sets the `mazwi_session` cookie: HttpOnly, SameSite=Lax, Secure only when the API itself receives HTTPS (see Limits), 14-day sliding expiry. A session for a deleted account is rejected.
 - Cross-site requests do not carry the Lax cookie, which is the CSRF defence for this JSON and multipart API.
-- A wrong email and a wrong password get the same message. Sign-up and sign-in are limited to 10 requests per minute per IP address (`Mazwi:AccountRequestsPerMinute`); the 11th returns 429.
+- A wrong email and a wrong password get the same message, and an unknown email still pays for one password hash so response time does not reveal which accounts exist. Sign-up and sign-in are limited to 10 requests per minute per client address (`Mazwi:AccountRequestsPerMinute`); the 11th returns 429.
 - `[StoryOwner]` checks ownership in the Domain (`Story.IsOwnedBy`) before an action runs. Signed out returns 401, another artist's story 403, a missing story 404.
 
 | Endpoint | Purpose |
@@ -38,10 +38,13 @@ It prints how many stories it claimed and only claims stories that have no owner
 
 - .NET: Domain email, password and ownership rules; Application sign-up, sign-in, claims and owner checks; real PostgreSQL artists, ownership, listing and claims; endpoint 401/403/404 for every story route, cookies, rate limits and a real database round-trip with two artists.
 - Browser: `e2e/auth.setup.ts` signs in a stable fixture artist (`e2e-artist@mazwi.test`) before the other specs, so repeated runs do not add accounts. `e2e/access.spec.ts` covers the sign-in redirect, wrong passwords, a taken email, the public feed and another artist being refused.
-- Browser fixture stories now belong to the fixture artist, so they no longer appear in your own Studio.
+- Browser fixture stories created from now on belong to the fixture artist and stay out of your Studio. Fixture stories from earlier runs are unowned like every other old story, so `--claim-stories` will also give you those synthetic stories.
+- The fixture passwords come from `MAZWI_E2E_ARTIST_PASSWORD` and `MAZWI_E2E_OTHER_ARTIST_PASSWORD` in the ignored `.env` (see `.env.example`). The browser run fails if they are missing.
 
 ## Limits
 
 - No password reset or email verification yet. Keep the app on localhost or a trusted network until those exist.
 - No account deletion screen. Deleting an artist row leaves their stories unowned until claimed.
 - The local app and tests still share the `_tests` database; separate them before hosting.
+- **Behind the Next.js proxy every request reaches the API from 127.0.0.1**, so the sign-in rate limit is one shared bucket for the whole site. Next passes a client-sent `X-Forwarded-For` through unchanged, so it cannot be trusted. Before hosting, put a trusted reverse proxy in front that sets forwarded headers, and enable `UseForwardedHeaders` for it.
+- For the same reason the API never sees HTTPS, so the cookie is not marked `Secure` yet. That also needs the trusted proxy before hosting.
