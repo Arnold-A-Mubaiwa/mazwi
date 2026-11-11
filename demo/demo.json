@@ -1,0 +1,42 @@
+{
+  "password": "mazwi-demo-2026",
+  "artists": [
+    { "email": "demo-artist@mazwi.test" },
+    { "email": "demo-artist-2@mazwi.test" }
+  ],
+  "stories": [
+    {
+      "artist": 0,
+      "title": "isiXhosa reading: Domino",
+      "artistName": "OpenSLR 32 volunteer",
+      "community": "isiXhosa speakers, South Africa",
+      "country": "ZA",
+      "type": "story",
+      "language": "xh",
+      "recording": "recordings/xho_0050_0069105840.wav",
+      "words": "Hawu, hawu, akusemnandi, wakhonkotha uDomino, etsiba ephuma phantsi kwebhedi."
+    },
+    {
+      "artist": 0,
+      "title": "Sesotho reading: Maobanyana",
+      "artistName": "OpenSLR 32 volunteer",
+      "community": "Sesotho speakers, South Africa",
+      "country": "ZA",
+      "type": "story",
+      "language": "st",
+      "recording": "recordings/sso_1801_2816619422.wav",
+      "words": "Maobanyana mona ha a ithimola o ile a butswella mosebetsi wa rona wa sekolo hole kwana."
+    },
+    {
+      "artist": 1,
+      "title": "Setswana reading: Nozibele",
+      "artistName": "OpenSLR 32 volunteer",
+      "community": "Setswana speakers, South Africa",
+      "country": "ZA",
+      "type": "story",
+      "language": "tn",
+      "recording": "recordings/tsn_4850_0027596674.wav",
+      "words": "Fela, ga ke isi ke apeele ntšwa dijo, ga araba Nozibele."
+    }
+  ]
+}

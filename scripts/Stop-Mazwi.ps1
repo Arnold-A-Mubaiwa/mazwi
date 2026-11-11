@@ -1,7 +1,10 @@
 $ErrorActionPreference = 'Stop'
 $workspaceRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $statePath = Join-Path $workspaceRoot '.local/run/processes.json'
-if (-not (Test-Path -LiteralPath $statePath)) { Write-Output 'No script-managed Mazwi servers are recorded. Existing terminals were left alone.'; return }
+# The demo PostgreSQL (Start-Mazwi.ps1 -Demo) only ever serves the ignored .local/demo-postgres folder.
+. (Join-Path $PSScriptRoot 'Demo-Postgres.ps1')
+function Stop-DemoDatabaseIfRunning { if (Stop-MazwiDemoDatabase $workspaceRoot) { Write-Output 'Stopped the demo database.' } }
+if (-not (Test-Path -LiteralPath $statePath)) { Write-Output 'No script-managed Mazwi servers are recorded. Existing terminals were left alone.'; Stop-DemoDatabaseIfRunning; return }
 $savedState = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
 if ($savedState.workspace -ne $workspaceRoot -or @($savedState.processes).Count -ne 2) { throw 'The saved process state does not match this workspace.' }
 $owned = @()
@@ -21,3 +24,4 @@ foreach ($entry in $savedState.processes) {
 foreach ($localProcess in $owned) { Stop-Process -Id $localProcess.Id -ErrorAction Stop }
 Remove-Item -LiteralPath $statePath
 Write-Output 'Stopped only the Mazwi servers started by Start-Mazwi.ps1. Recordings and database content were kept.'
+Stop-DemoDatabaseIfRunning
