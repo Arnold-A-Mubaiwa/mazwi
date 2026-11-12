@@ -64,8 +64,12 @@ if (-not (Test-Path -LiteralPath $nextCli)) { throw 'Install the frontend depend
 New-Item -ItemType Directory -Path $runRoot -Force | Out-Null
 
 function Invoke-MazwiStep([string]$Executable, [string[]]$CommandArguments, [string]$Directory, [string]$Label) {
-    $stepProcess = Start-Process -FilePath $Executable -ArgumentList $CommandArguments -WorkingDirectory $Directory -WindowStyle Hidden -Wait -PassThru `
+    # Not -Wait: in PowerShell 5.1 it also waits for child processes, and dotnet build leaves its MSBuild
+    # nodes and compiler server running for minutes. Wait for the step process only.
+    $stepProcess = Start-Process -FilePath $Executable -ArgumentList $CommandArguments -WorkingDirectory $Directory -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $runRoot "$Label.out.log") -RedirectStandardError (Join-Path $runRoot "$Label.err.log")
+    $null = $stepProcess.Handle  # Without reading the handle now, PowerShell 5.1 reports no exit code later.
+    if (-not $stepProcess.WaitForExit(900000)) { throw "$Label did not finish within 15 minutes. Details remain in ignored .local/run logs." }
     if ($stepProcess.ExitCode -ne 0) { throw "$Label failed. Details remain in ignored .local/run logs; credentials are not printed here." }
 }
 
