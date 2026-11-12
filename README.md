@@ -97,5 +97,5 @@ npm.cmd --prefix web run test:e2e                   # browser tests (needs the M
 ## Learn more
 
 - How it is built and the rules for contributors: [docs/development.md](docs/development.md) and [AGENTS.md](AGENTS.md).
-- What each level added: [Level 1](docs/level-1.md) (AI drafts and voices), [Level 2](docs/level-2.md) (accounts, subtitles, dubbing, sharing), [Level 3](docs/level-3.md) (ready for real artists), and Level 4 (all-Africa languages and Story Twins).
+- What each level added: [Level 1](docs/level-1.md) (AI drafts and voices), [Level 2](docs/level-2.md) (accounts, subtitles, dubbing, sharing), [Level 3](docs/level-3.md) (ready for real artists), and [Level 4](docs/level-4.md) (all-Africa languages, Story Twins, Voice Stamp test, judge demo).
 - Running on a server: [docs/hosting.md](docs/hosting.md).
